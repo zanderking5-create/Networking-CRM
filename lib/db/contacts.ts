@@ -27,6 +27,19 @@ export async function getContact(id: string): Promise<Contact | null> {
   return data as Contact | null;
 }
 
+// Case-insensitive exact-name lookup, used by the capture flow to avoid
+// creating a duplicate contact when the parser didn't confidently match one.
+export async function findContactByName(name: string): Promise<Contact | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("contacts")
+    .select("*")
+    .ilike("name", name)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data as Contact | null;
+}
+
 export async function createContact(input: ContactInsert): Promise<Contact> {
   const supabase = await createClient();
   const { data, error } = await supabase

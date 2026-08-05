@@ -22,6 +22,19 @@ export async function getCompany(id: string): Promise<Company | null> {
   return data as Company | null;
 }
 
+// Case-insensitive exact-name lookup, used by the capture flow to avoid
+// creating a duplicate company when the parser didn't confidently match one.
+export async function findCompanyByName(name: string): Promise<Company | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("companies")
+    .select("*")
+    .ilike("name", name)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data as Company | null;
+}
+
 export async function createCompany(input: CompanyInsert): Promise<Company> {
   const supabase = await createClient();
   const { data, error } = await supabase

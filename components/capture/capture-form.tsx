@@ -1,0 +1,98 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { confirmCaptureAction } from "@/lib/capture/actions";
+import type { ParseResult } from "@/lib/capture/schema";
+import { PreviewCard } from "./preview-card";
+
+type Preview = { result: ParseResult; rawText: string };
+
+export function CaptureForm() {
+  const [text, setText] = useState("");
+  const [parsing, setParsing] = useState(false);
+  const [parseError, setParseError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<Preview | null>(null);
+  const [confirming, startConfirm] = useTransition();
+  const [confirmError, setConfirmError] = useState<string | null>(null);
+  const [savedMessage, setSavedMessage] = useState<string | null>(null);
+
+  async function handleParse() {
+    if (!text.trim() || parsing) return;
+    setParsing(true);
+    setParseError(null);
+    setSavedMessage(null);
+    try {
+      const res = await fetch("/api/parse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setParseError(data.error ?? "Something went wrong parsing that note.");
+        return;
+      }
+      setPreview({ result: data.result, rawText: data.raw_text });
+    } catch {
+      setParseError("Network error — check your connection and try again.");
+    } finally {
+      setParsing(false);
+    }
+  }
+
+  function handleConfirm() {
+    if (!preview) return;
+    setConfirmError(null);
+    startConfirm(async () => {
+      const outcome = await confirmCaptureAction(preview.result, preview.rawText);
+      if (!outcome.ok) {
+        setConfirmError(outcome.error);
+        return;
+      }
+      setSavedMessage("Saved to the CRM.");
+      setPreview(null);
+      setText("");
+    });
+  }
+
+  function handleCancel() {
+    setPreview(null);
+    setConfirmError(null);
+  }
+
+  return (
+    <div className="space-y-4">
+      <Textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder={
+          "Paste a quick note — e.g. \"Called Burke Griffin, went well — he'll intro me to two people at Encord's network, follow up in a week, and he said the technical bar is lower than I feared.\""
+        }
+        rows={5}
+        disabled={parsing || !!preview}
+      />
+
+      {!preview && (
+        <Button onClick={handleParse} disabled={parsing || !text.trim()}>
+          {parsing ? "Parsing…" : "Parse"}
+        </Button>
+      )}
+
+      {parseError && <p className="text-sm text-destructive">{parseError}</p>}
+      {savedMessage && <p className="text-sm text-green-600">{savedMessage}</p>}
+
+      {preview && (
+        <PreviewCard
+          result={preview.result}
+          onChange={(result) => setPreview({ ...preview, result })}
+          onConfirm={handleConfirm}
+          onCancel={handleCancel}
+          confirming={confirming}
+          confirmError={confirmError}
+        />
+      )}
+    </div>
+  );
+}

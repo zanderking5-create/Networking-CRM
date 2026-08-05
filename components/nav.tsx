@@ -6,6 +6,9 @@ export function Nav() {
       <Link href="/today" className="hover:underline">
         Today
       </Link>
+      <Link href="/capture" className="hover:underline">
+        Capture
+      </Link>
       <Link href="/contacts" className="hover:underline">
         Contacts
       </Link>
