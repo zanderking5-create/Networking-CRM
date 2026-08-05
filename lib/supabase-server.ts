@@ -18,9 +18,7 @@ export async function createClient() {
               cookieStore.set(name, value, options),
             );
           } catch {
-            // Called from a Server Component, which can't set cookies. Session
-            // refresh (if needed) will persist next time a Route Handler or
-            // Server Action runs, e.g. /auth/callback.
+            // Called from a Server Component; middleware refreshes the session instead.
           }
         },
       },
