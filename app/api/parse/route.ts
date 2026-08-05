@@ -18,6 +18,16 @@ export async function POST(request: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return Response.json(
+      {
+        error:
+          "ANTHROPIC_API_KEY is not set. Add it to .env.local for local dev, and to the Vercel project's environment variables for production.",
+      },
+      { status: 500 },
+    );
+  }
+
   let text: string;
   try {
     const body = await request.json();
