@@ -1,11 +1,14 @@
 import { createClient } from "@/lib/supabase-server";
 import type { Company, CompanyInsert, CompanyUpdate } from "./types";
 
+// Ranked by conviction (highest first, nulls last) so the list reads as a
+// target list, with recency as the tiebreaker.
 export async function listCompanies(): Promise<Company[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("companies")
     .select("*")
+    .order("conviction", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as Company[];

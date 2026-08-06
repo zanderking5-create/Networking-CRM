@@ -87,6 +87,15 @@ export default async function CompanyDetailPage({
             defaultValue={company.social_pct ?? ""}
           />
         </Field>
+        <Field label="Conviction (1-5) — how much you want this, independent of relationship warmth">
+          <Input
+            name="conviction"
+            type="number"
+            min={1}
+            max={5}
+            defaultValue={company.conviction ?? ""}
+          />
+        </Field>
         <Field label="Status">
           <Input name="status" defaultValue={company.status ?? ""} />
         </Field>

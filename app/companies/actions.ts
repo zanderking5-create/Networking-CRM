@@ -21,6 +21,7 @@ export async function createCompanyAction(formData: FormData) {
     status: formText(formData, "status"),
     geography: formText(formData, "geography"),
     website: formText(formData, "website"),
+    conviction: formInt(formData, "conviction"),
   });
 
   revalidatePath("/companies");
@@ -42,6 +43,7 @@ export async function updateCompanyAction(id: string, formData: FormData) {
     social_pct: formInt(formData, "social_pct"),
     status: formText(formData, "status"),
     website: formText(formData, "website"),
+    conviction: formInt(formData, "conviction"),
   });
 
   revalidatePath("/companies");

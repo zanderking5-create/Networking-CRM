@@ -13,6 +13,7 @@ export type Company = {
   social_pct: number | null;
   status: string | null;
   website: string | null;
+  conviction: number | null; // 1-5, how much the user wants this opportunity
   created_at: string;
 };
 

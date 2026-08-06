@@ -36,6 +36,7 @@ export default async function CompaniesPage() {
           <thead>
             <tr className="border-b border-border text-left">
               <th className="py-2 font-medium">Name</th>
+              <th className="py-2 font-medium">Conviction</th>
               <th className="py-2 font-medium">Stage</th>
               <th className="py-2 font-medium">Status</th>
               <th className="py-2 font-medium">Geography</th>
@@ -48,6 +49,9 @@ export default async function CompaniesPage() {
                   <Link href={`/companies/${company.id}`} className="underline">
                     {company.name}
                   </Link>
+                </td>
+                <td className="py-2">
+                  {company.conviction ? `${company.conviction}/5` : "—"}
                 </td>
                 <td className="py-2">{company.stage ?? "—"}</td>
                 <td className="py-2">{company.status ?? "—"}</td>
@@ -66,6 +70,13 @@ export default async function CompaniesPage() {
           <Input name="status" placeholder="Status (e.g. researching, active)" />
           <Input name="geography" placeholder="Geography" />
           <Input name="website" placeholder="Website" />
+          <Input
+            name="conviction"
+            type="number"
+            min={1}
+            max={5}
+            placeholder="Conviction (1-5)"
+          />
           <Button type="submit">Add company</Button>
         </form>
       </section>
