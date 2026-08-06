@@ -16,6 +16,22 @@ export async function listContacts(): Promise<ContactWithCompany[]> {
   return (data ?? []) as ContactWithCompany[];
 }
 
+// Warm relationships (warmth >= 4) going stale: never touched, or not
+// touched in 30+ days. Never-touched contacts sort first as the most
+// neglected, then oldest last_touch_at.
+export async function listColdContacts(): Promise<ContactWithCompany[]> {
+  const supabase = await createClient();
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await supabase
+    .from("contacts")
+    .select("*, companies(id, name)")
+    .gte("warmth", 4)
+    .or(`last_touch_at.is.null,last_touch_at.lt.${cutoff}`)
+    .order("last_touch_at", { ascending: true, nullsFirst: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ContactWithCompany[];
+}
+
 export async function listContactsByCompany(
   companyId: string,
 ): Promise<Contact[]> {
