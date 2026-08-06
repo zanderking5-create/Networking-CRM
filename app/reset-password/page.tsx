@@ -41,39 +41,47 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-8">
-      <div className="w-full max-w-sm space-y-6">
-        <h1 className="text-2xl font-semibold text-center">
-          Set your password
-        </h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            type="password"
-            placeholder="New password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-          />
-          <Input
-            type="password"
-            placeholder="Confirm password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            required
-            minLength={8}
-          />
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={status === "loading"}
-          >
-            {status === "loading" ? "Saving..." : "Set password"}
-          </Button>
-          {error && (
-            <p className="text-sm text-destructive text-center">{error}</p>
-          )}
-        </form>
+    <main className="flex min-h-screen items-center justify-center bg-muted/40 p-8">
+      <div className="w-full max-w-sm space-y-8">
+        <div className="space-y-1 text-center">
+          <p className="text-sm font-semibold tracking-tight text-primary">
+            Networking CRM
+          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Set your password
+          </h1>
+        </div>
+
+        <div className="rounded-xl border border-border bg-card p-8 shadow-sm">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              type="password"
+              placeholder="New password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={8}
+            />
+            <Input
+              type="password"
+              placeholder="Confirm password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              required
+              minLength={8}
+            />
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={status === "loading"}
+            >
+              {status === "loading" ? "Saving..." : "Set password"}
+            </Button>
+            {error && (
+              <p className="text-sm text-destructive text-center">{error}</p>
+            )}
+          </form>
+        </div>
       </div>
     </main>
   );

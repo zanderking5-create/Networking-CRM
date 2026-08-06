@@ -41,9 +41,9 @@ export default async function ContactDetailPage({
   const remove = deleteContactAction.bind(null, contact.id);
 
   return (
-    <main className="mx-auto max-w-3xl space-y-8 p-8">
+    <main className="mx-auto max-w-3xl space-y-10 p-8 sm:p-10">
       <Nav />
-      <h1 className="text-2xl font-semibold">{contact.name}</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">{contact.name}</h1>
 
       <form action={update} className="space-y-3">
         <Field label="Name">
@@ -53,7 +53,7 @@ export default async function ContactDetailPage({
           <select
             name="company_id"
             defaultValue={contact.company_id ?? ""}
-            className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/70"
           >
             <option value="">No company</option>
             {companies.map((company) => (
@@ -104,7 +104,7 @@ export default async function ContactDetailPage({
       </form>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-medium">Open tasks</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Open tasks</h2>
         {openTasks.length === 0 ? (
           <p className="text-sm text-muted-foreground">No open tasks.</p>
         ) : (
@@ -125,7 +125,7 @@ export default async function ContactDetailPage({
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-medium">Interaction timeline</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Interaction timeline</h2>
         <Timeline
           items={interactions.map((i) => ({
             id: i.id,

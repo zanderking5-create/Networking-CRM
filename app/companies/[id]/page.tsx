@@ -41,9 +41,9 @@ export default async function CompanyDetailPage({
   const remove = deleteCompanyAction.bind(null, company.id);
 
   return (
-    <main className="mx-auto max-w-3xl space-y-8 p-8">
+    <main className="mx-auto max-w-3xl space-y-10 p-8 sm:p-10">
       <Nav />
-      <h1 className="text-2xl font-semibold">{company.name}</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">{company.name}</h1>
 
       <form action={update} className="space-y-3">
         <Field label="Name">
@@ -63,7 +63,7 @@ export default async function CompanyDetailPage({
             name="thesis_fit_notes"
             defaultValue={company.thesis_fit_notes ?? ""}
             rows={4}
-            className="w-full rounded-lg border border-input bg-transparent p-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="w-full rounded-lg border border-input bg-transparent p-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/70"
           />
         </Field>
         <Field label="Founder delegation style">
@@ -106,7 +106,7 @@ export default async function CompanyDetailPage({
       </form>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-medium">Contacts</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Contacts</h2>
         {contacts.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             No contacts linked to this company yet.
@@ -115,7 +115,7 @@ export default async function CompanyDetailPage({
           <ul className="space-y-1 text-sm">
             {contacts.map((contact) => (
               <li key={contact.id}>
-                <Link href={`/contacts/${contact.id}`} className="underline">
+                <Link href={`/contacts/${contact.id}`} className="text-primary underline">
                   {contact.name}
                 </Link>
                 {contact.role && (
@@ -128,7 +128,7 @@ export default async function CompanyDetailPage({
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-medium">Interaction timeline</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Interaction timeline</h2>
         <Timeline
           items={interactions.map((i) => ({
             id: i.id,

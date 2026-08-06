@@ -61,88 +61,97 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-8">
-      <div className="w-full max-w-sm space-y-6">
-        <h1 className="text-2xl font-semibold text-center">Log in</h1>
+    <main className="flex min-h-screen items-center justify-center bg-muted/40 p-8">
+      <div className="w-full max-w-sm space-y-8">
+        <div className="space-y-1 text-center">
+          <p className="text-sm font-semibold tracking-tight text-primary">
+            Networking CRM
+          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {mode === "signin" ? "Welcome back" : "Reset your password"}
+          </h1>
+        </div>
 
-        {mode === "signin" ? (
-          <>
-            <form onSubmit={handleSignIn} className="space-y-4">
-              <Input
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-              <Input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={status === "loading"}
-              >
-                {status === "loading" ? "Logging in..." : "Log in"}
-              </Button>
-              {error && (
-                <p className="text-sm text-destructive text-center">
-                  {error}
-                </p>
-              )}
-            </form>
-            <button
-              type="button"
-              onClick={() => setMode("reset")}
-              className="block w-full text-center text-sm text-muted-foreground hover:underline"
-            >
-              Forgot password, or setting it for the first time?
-            </button>
-          </>
-        ) : (
-          <>
-            {resetStatus === "sent" ? (
-              <p className="text-center text-sm text-muted-foreground">
-                Check {resetEmail} for a link to set your password.
-              </p>
-            ) : (
-              <form onSubmit={handleResetRequest} className="space-y-4">
+        <div className="rounded-xl border border-border bg-card p-8 shadow-sm">
+          {mode === "signin" ? (
+            <div className="space-y-4">
+              <form onSubmit={handleSignIn} className="space-y-4">
                 <Input
                   type="email"
                   placeholder="you@example.com"
-                  value={resetEmail}
-                  onChange={(e) => setResetEmail(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+                <Input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                 />
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={resetStatus === "loading"}
+                  disabled={status === "loading"}
                 >
-                  {resetStatus === "loading"
-                    ? "Sending..."
-                    : "Send password link"}
+                  {status === "loading" ? "Logging in..." : "Log in"}
                 </Button>
-                {resetError && (
+                {error && (
                   <p className="text-sm text-destructive text-center">
-                    {resetError}
+                    {error}
                   </p>
                 )}
               </form>
-            )}
-            <button
-              type="button"
-              onClick={() => setMode("signin")}
-              className="block w-full text-center text-sm text-muted-foreground hover:underline"
-            >
-              Back to log in
-            </button>
-          </>
-        )}
+              <button
+                type="button"
+                onClick={() => setMode("reset")}
+                className="block w-full text-center text-sm text-muted-foreground hover:text-foreground hover:underline"
+              >
+                Forgot password, or setting it for the first time?
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {resetStatus === "sent" ? (
+                <p className="text-center text-sm text-muted-foreground">
+                  Check {resetEmail} for a link to set your password.
+                </p>
+              ) : (
+                <form onSubmit={handleResetRequest} className="space-y-4">
+                  <Input
+                    type="email"
+                    placeholder="you@example.com"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    required
+                  />
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={resetStatus === "loading"}
+                  >
+                    {resetStatus === "loading"
+                      ? "Sending..."
+                      : "Send password link"}
+                  </Button>
+                  {resetError && (
+                    <p className="text-sm text-destructive text-center">
+                      {resetError}
+                    </p>
+                  )}
+                </form>
+              )}
+              <button
+                type="button"
+                onClick={() => setMode("signin")}
+                className="block w-full text-center text-sm text-muted-foreground hover:text-foreground hover:underline"
+              >
+                Back to log in
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </main>
   );

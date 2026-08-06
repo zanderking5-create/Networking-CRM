@@ -19,9 +19,9 @@ export default async function CompaniesPage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl space-y-8 p-8">
+    <main className="mx-auto max-w-3xl space-y-10 p-8 sm:p-10">
       <Nav />
-      <h1 className="text-2xl font-semibold">Companies</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">Companies</h1>
 
       {loadError ? (
         <p className="text-sm text-destructive">
@@ -34,24 +34,33 @@ export default async function CompaniesPage() {
       ) : (
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border text-left">
-              <th className="py-2 font-medium">Name</th>
+            <tr className="border-b border-border bg-muted/50 text-left">
+              <th className="rounded-l-lg py-2 pl-2 font-medium">Name</th>
               <th className="py-2 font-medium">Conviction</th>
               <th className="py-2 font-medium">Stage</th>
               <th className="py-2 font-medium">Status</th>
-              <th className="py-2 font-medium">Geography</th>
+              <th className="rounded-r-lg py-2 font-medium">Geography</th>
             </tr>
           </thead>
           <tbody>
             {companies.map((company) => (
-              <tr key={company.id} className="border-b border-border">
-                <td className="py-2">
-                  <Link href={`/companies/${company.id}`} className="underline">
+              <tr
+                key={company.id}
+                className="border-b border-border transition-colors hover:bg-muted/40"
+              >
+                <td className="py-2 pl-2">
+                  <Link href={`/companies/${company.id}`} className="text-primary underline">
                     {company.name}
                   </Link>
                 </td>
                 <td className="py-2">
-                  {company.conviction ? `${company.conviction}/5` : "—"}
+                  {company.conviction ? (
+                    <span className="font-medium text-primary">
+                      {company.conviction}/5
+                    </span>
+                  ) : (
+                    "—"
+                  )}
                 </td>
                 <td className="py-2">{company.stage ?? "—"}</td>
                 <td className="py-2">{company.status ?? "—"}</td>
@@ -63,7 +72,7 @@ export default async function CompaniesPage() {
       )}
 
       <section className="space-y-3">
-        <h2 className="text-lg font-medium">Add company</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Add company</h2>
         <form action={createCompanyAction} className="space-y-2">
           <Input name="name" placeholder="Name *" required />
           <Input name="stage" placeholder="Stage (e.g. Seed, Series A)" />

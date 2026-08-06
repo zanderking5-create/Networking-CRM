@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import type { Ambiguity, ParseResult } from "@/lib/capture/schema";
 
 const selectClass =
-  "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+  "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/70";
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -63,7 +63,7 @@ export function PreviewCard({
   return (
     <div className="space-y-4 rounded-lg border border-border p-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-medium capitalize">{result.type} — preview</h2>
+        <h2 className="text-lg font-semibold tracking-tight capitalize">{result.type} — preview</h2>
         <ConfidenceBadge confidence={result.confidence} />
       </div>
 

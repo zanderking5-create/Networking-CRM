@@ -17,7 +17,7 @@ function DirectionBadge({ direction }: { direction: string | null }) {
   return (
     <span
       className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-        isOut ? "bg-secondary text-secondary-foreground" : "bg-muted text-foreground"
+        isOut ? "bg-primary/10 text-primary" : "bg-sky/10 text-sky"
       }`}
     >
       {isOut ? "out" : "in"}

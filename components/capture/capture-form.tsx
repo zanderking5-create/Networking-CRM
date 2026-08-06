@@ -81,7 +81,9 @@ export function CaptureForm() {
       )}
 
       {parseError && <p className="text-sm text-destructive">{parseError}</p>}
-      {savedMessage && <p className="text-sm text-green-600">{savedMessage}</p>}
+      {savedMessage && (
+        <p className="text-sm font-medium text-primary">{savedMessage}</p>
+      )}
 
       {preview && (
         <PreviewCard

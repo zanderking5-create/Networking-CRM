@@ -38,7 +38,9 @@ function sinceLabel(dateStr: string | null, neverText: string): string {
 
 function Card({ children }: { children: ReactNode }) {
   return (
-    <div className="space-y-2 rounded-lg border border-border p-4">{children}</div>
+    <div className="space-y-2 rounded-xl border border-border bg-card p-4 transition-colors hover:border-ring/40">
+      {children}
+    </div>
   );
 }
 
@@ -61,13 +63,13 @@ function TaskCard({ task }: { task: TaskWithLinks }) {
           {(task.contacts || task.companies) && (
             <p className="text-sm text-muted-foreground">
               {task.contacts && (
-                <Link href={`/contacts/${task.contacts.id}`} className="underline">
+                <Link href={`/contacts/${task.contacts.id}`} className="text-primary underline">
                   {task.contacts.name}
                 </Link>
               )}
               {task.contacts && task.companies && " · "}
               {task.companies && (
-                <Link href={`/companies/${task.companies.id}`} className="underline">
+                <Link href={`/companies/${task.companies.id}`} className="text-primary underline">
                   {task.companies.name}
                 </Link>
               )}
@@ -101,14 +103,14 @@ function ColdContactCard({ contact }: { contact: ContactWithCompany }) {
     <Card>
       <div className="flex items-center justify-between gap-3">
         <div className="space-y-1">
-          <Link href={`/contacts/${contact.id}`} className="font-medium underline">
+          <Link href={`/contacts/${contact.id}`} className="font-medium text-primary underline">
             {contact.name}
           </Link>
           {contact.companies && (
             <p className="text-sm text-muted-foreground">{contact.companies.name}</p>
           )}
         </div>
-        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+        <span className="shrink-0 rounded-full bg-sky/10 px-2 py-0.5 text-xs font-medium text-sky">
           warmth {contact.warmth}
         </span>
       </div>
@@ -123,10 +125,10 @@ function StalledCompanyCard({ company }: { company: StalledCompany }) {
   return (
     <Card>
       <div className="flex items-center justify-between gap-3">
-        <Link href={`/companies/${company.id}`} className="font-medium underline">
+        <Link href={`/companies/${company.id}`} className="font-medium text-primary underline">
           {company.name}
         </Link>
-        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+        <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
           conviction {company.conviction}/5
         </span>
       </div>
@@ -150,7 +152,7 @@ function Section({
 }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-medium">
+      <h2 className="text-lg font-semibold tracking-tight">
         {title}
         {count > 0 && <span className="ml-2 text-sm text-muted-foreground">{count}</span>}
       </h2>
@@ -187,24 +189,26 @@ export default async function TodayPage() {
     stalledCompanies.length === 0;
 
   return (
-    <main className="mx-auto max-w-3xl space-y-8 p-8">
+    <main className="mx-auto max-w-3xl space-y-10 p-8 sm:p-10">
       <Nav />
-      <h1 className="text-4xl font-bold">Today</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">Today</h1>
 
       {loadError ? (
         <p className="text-sm text-destructive">
           Could not load your dashboard: {loadError}.
         </p>
       ) : allClear ? (
-        <div className="rounded-lg border border-border p-8 text-center">
-          <p className="text-lg font-medium">You&apos;re all caught up.</p>
+        <div className="rounded-xl border border-border bg-card p-10 text-center">
+          <p className="text-lg font-medium text-primary">
+            You&apos;re all caught up.
+          </p>
           <p className="mt-1 text-sm text-muted-foreground">
             No overdue tasks, no relationships going cold, no stalled top
             targets. Nothing needs you right now.
           </p>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-10">
           <Section
             title="Due"
             count={dueTasks.length}
