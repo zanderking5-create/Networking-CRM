@@ -2,7 +2,11 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { anthropic, CAPTURE_MODEL } from "@/lib/anthropic";
 import { buildSystemPrompt } from "@/lib/capture/prompt";
-import { parseResultSchema, type ParseResult } from "@/lib/capture/schema";
+import {
+  captureWireSchema,
+  wireToParseResult,
+  type ParseResult,
+} from "@/lib/capture/schema";
 import { listCompanies } from "@/lib/db/companies";
 import { listContacts } from "@/lib/db/contacts";
 import { createClient } from "@/lib/supabase-server";
@@ -68,7 +72,7 @@ export async function POST(request: Request) {
       max_tokens: 4096,
       output_config: {
         effort: "medium",
-        format: zodOutputFormat(parseResultSchema),
+        format: zodOutputFormat(captureWireSchema),
       },
       system,
       messages: [{ role: "user", content: text }],
@@ -110,7 +114,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const result: ParseResult = response.parsed_output;
+  const result: ParseResult = wireToParseResult(response.parsed_output);
 
   // Defense against a hallucinated id: only trust matched_*_id values that
   // are actually in the lists we gave the model.

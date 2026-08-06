@@ -35,13 +35,15 @@ export function buildSystemPrompt(
 
 Today's date is ${todayIso} (${weekday}). Resolve every relative date ("in a week", "next Tuesday", "tomorrow") against this date and output an absolute ISO date (YYYY-MM-DD).
 
-Classify the note into exactly one of four types and extract only that type's fields:
+Set "type" to exactly one of the four values below, fill in only the fields marked for that type, and leave every other field empty. The output shape is one flat object shared by all four types, so most fields will be empty on any given note — that is expected. There is no null: use an empty string for text that doesn't apply, "none" for enum fields that don't apply, and 0 (or -1 for social_pct) for numbers you have no signal for.
 - "contact" — the note is primarily about a person: a new contact, or new info about an existing one (role, warmth, a hook, how you met, etc).
 - "company" — the note is primarily about a company: stage, investors, geography, thesis fit, how the founder delegates, status, etc.
-- "interaction" — the note describes something that happened with a person: a call, email, LinkedIn message, or in-person meeting. If the note implies a next step ("follow up in a week", "send him the doc Friday", "circle back after his trip"), also fill in follow_up_task.
+- "interaction" — the note describes something that happened with a person: a call, email, LinkedIn message, or in-person meeting. If the note implies a next step ("follow up in a week", "send him the doc Friday", "circle back after his trip"), also fill in follow_up_title and follow_up_due_date.
 - "task" — the note is a to-do with no interaction attached: something to do by some date, optionally tied to a contact or company.
 
-Matching existing records: below are the contacts and companies already in the CRM. When the note names one of them, set matched_contact_id / matched_company_id to that exact id — do not invent an id that isn't in these lists. If the note names someone who isn't in the list, leave matched_contact_id null and put their name in contact_name_if_new (interaction/task) or in the contact's name field (contact type). If you're choosing between two similarly-named people, pick the more likely one and add an ambiguity note rather than leaving it unmatched.
+Always fill in person_name when the note involves a specific person, including when you also set matched_contact_id.
+
+Matching existing records: below are the contacts and companies already in the CRM. When the note names one of them, set matched_contact_id / matched_company_id to that exact id — do not invent an id that isn't in these lists. If the note names someone who isn't in the list, leave matched_contact_id empty and still put their name in person_name. If you're choosing between two similarly-named people, pick the more likely one and add an ambiguity note rather than leaving it unmatched.
 
 Existing contacts:
 ${contactsList}
