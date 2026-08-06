@@ -17,7 +17,16 @@ export const contactFieldsSchema = z.object({
   company_name: z.string().nullable(),
   role: z.string().nullable(),
   type: z.enum(["operator", "finance", "recruiter"]).nullable(),
-  warmth: z.number().int().min(1).max(5).nullable(),
+  // The numeric min/max below are stripped from the schema sent to the API
+  // (the SDK enforces them client-side), so the range has to be stated in the
+  // description or the model has no way to know it.
+  warmth: z
+    .number()
+    .int()
+    .min(1)
+    .max(5)
+    .nullable()
+    .describe("Warmth of the relationship as an integer from 1 (cold) to 5 (warm). Must be between 1 and 5."),
   hook: z.string().nullable(),
   source: z.string().nullable(),
   linkedin_url: z.string().nullable(),
@@ -32,7 +41,13 @@ export const companyFieldsSchema = z.object({
   thesis_fit_notes: z.string().nullable(),
   founder_delegation_style: z.string().nullable(),
   autonomy_scope: z.string().nullable(),
-  social_pct: z.number().int().min(0).max(100).nullable(),
+  social_pct: z
+    .number()
+    .int()
+    .min(0)
+    .max(100)
+    .nullable()
+    .describe("Percentage of the role that is social/external-facing, as an integer from 0 to 100. Must be between 0 and 100."),
   status: z.string().nullable(),
   website: z.string().nullable(),
 });
@@ -94,7 +109,7 @@ const interactionResultSchema = z.object({
     .min(1)
     .max(5)
     .nullable()
-    .describe("A new 1-5 warmth rating for the contact if this interaction should change it, else null."),
+    .describe("A new warmth rating for the contact if this interaction should change it, else null. Must be an integer between 1 (cold) and 5 (warm)."),
   warmth_reason: z.string().nullable(),
   confidence: confidenceSchema,
   ambiguities: z.array(ambiguitySchema),
