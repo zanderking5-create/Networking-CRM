@@ -1,10 +1,14 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { Nav } from "@/components/nav";
+import { Timeline } from "@/components/timeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { requireUser } from "@/lib/auth";
 import { getCompany } from "@/lib/db/companies";
+import { listContactsByCompany } from "@/lib/db/contacts";
+import { listInteractionsForContacts } from "@/lib/db/interactions";
 import { deleteCompanyAction, updateCompanyAction } from "../actions";
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -23,8 +27,15 @@ export default async function CompanyDetailPage({
 }) {
   await requireUser();
   const { id } = await params;
-  const company = await getCompany(id);
+  const [company, contacts] = await Promise.all([
+    getCompany(id),
+    listContactsByCompany(id),
+  ]);
   if (!company) notFound();
+
+  const interactions = await listInteractionsForContacts(
+    contacts.map((c) => c.id),
+  );
 
   const update = updateCompanyAction.bind(null, company.id);
   const remove = deleteCompanyAction.bind(null, company.id);
@@ -84,6 +95,43 @@ export default async function CompanyDetailPage({
         </Field>
         <Button type="submit">Save</Button>
       </form>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-medium">Contacts</h2>
+        {contacts.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No contacts linked to this company yet.
+          </p>
+        ) : (
+          <ul className="space-y-1 text-sm">
+            {contacts.map((contact) => (
+              <li key={contact.id}>
+                <Link href={`/contacts/${contact.id}`} className="underline">
+                  {contact.name}
+                </Link>
+                {contact.role && (
+                  <span className="text-muted-foreground"> — {contact.role}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-medium">Interaction timeline</h2>
+        <Timeline
+          items={interactions.map((i) => ({
+            id: i.id,
+            occurred_at: i.occurred_at,
+            direction: i.direction,
+            channel: i.channel,
+            summary: i.summary,
+            contactName: i.contacts?.name,
+          }))}
+          emptyMessage="No interactions logged with any contact at this company yet."
+        />
+      </section>
 
       <form action={remove}>
         <Button variant="destructive" type="submit">

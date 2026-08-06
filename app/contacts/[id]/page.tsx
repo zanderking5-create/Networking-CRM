@@ -1,12 +1,15 @@
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { Nav } from "@/components/nav";
+import { Timeline } from "@/components/timeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { requireUser } from "@/lib/auth";
 import { listCompanies } from "@/lib/db/companies";
 import { getContact } from "@/lib/db/contacts";
-import { toDatetimeLocal } from "@/lib/forms";
+import { listInteractionsForContact } from "@/lib/db/interactions";
+import { listOpenTasksForContact } from "@/lib/db/tasks";
+import { formatDate, toDatetimeLocal } from "@/lib/forms";
 import { deleteContactAction, updateContactAction } from "../actions";
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -25,9 +28,11 @@ export default async function ContactDetailPage({
 }) {
   await requireUser();
   const { id } = await params;
-  const [contact, companies] = await Promise.all([
+  const [contact, companies, interactions, openTasks] = await Promise.all([
     getContact(id),
     listCompanies(),
+    listInteractionsForContact(id),
+    listOpenTasksForContact(id),
   ]);
   if (!contact) notFound();
 
@@ -96,6 +101,37 @@ export default async function ContactDetailPage({
         </Field>
         <Button type="submit">Save</Button>
       </form>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-medium">Open tasks</h2>
+        {openTasks.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No open tasks.</p>
+        ) : (
+          <ul className="space-y-1 text-sm">
+            {openTasks.map((task) => (
+              <li key={task.id} className="flex items-center justify-between gap-3">
+                <span>{task.title}</span>
+                <span className="text-muted-foreground">
+                  {task.due_date ? formatDate(task.due_date) : "no due date"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-medium">Interaction timeline</h2>
+        <Timeline
+          items={interactions.map((i) => ({
+            id: i.id,
+            occurred_at: i.occurred_at,
+            direction: i.direction,
+            channel: i.channel,
+            summary: i.summary,
+          }))}
+        />
+      </section>
 
       <form action={remove}>
         <Button variant="destructive" type="submit">

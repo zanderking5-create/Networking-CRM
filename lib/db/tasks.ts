@@ -1,6 +1,20 @@
 import { createClient } from "@/lib/supabase-server";
 import type { Task } from "./types";
 
+export async function listOpenTasksForContact(
+  contactId: string,
+): Promise<Task[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("*")
+    .eq("contact_id", contactId)
+    .eq("status", "open")
+    .order("due_date", { ascending: true, nullsFirst: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Task[];
+}
+
 export type TaskInsert = {
   contact_id?: string | null;
   company_id?: string | null;

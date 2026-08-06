@@ -16,6 +16,19 @@ export async function listContacts(): Promise<ContactWithCompany[]> {
   return (data ?? []) as ContactWithCompany[];
 }
 
+export async function listContactsByCompany(
+  companyId: string,
+): Promise<Contact[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("contacts")
+    .select("*")
+    .eq("company_id", companyId)
+    .order("name", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Contact[];
+}
+
 export async function getContact(id: string): Promise<Contact | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
