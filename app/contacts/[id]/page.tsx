@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { Nav } from "@/components/nav";
+import { TaskDueDateEditor } from "@/components/task-due-date-editor";
 import { Timeline } from "@/components/timeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -111,9 +112,12 @@ export default async function ContactDetailPage({
             {openTasks.map((task) => (
               <li key={task.id} className="flex items-center justify-between gap-3">
                 <span>{task.title}</span>
-                <span className="text-muted-foreground">
-                  {task.due_date ? formatDate(task.due_date) : "no due date"}
-                </span>
+                <TaskDueDateEditor
+                  taskId={task.id}
+                  dueDate={task.due_date}
+                  label={task.due_date ? formatDate(task.due_date) : "no due date"}
+                  labelClassName="text-muted-foreground"
+                />
               </li>
             ))}
           </ul>

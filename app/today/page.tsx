@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Nav } from "@/components/nav";
+import { TaskDueDateEditor } from "@/components/task-due-date-editor";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth";
 import type { StalledCompany } from "@/lib/db/companies";
@@ -10,7 +11,7 @@ import { listDueTasks } from "@/lib/db/tasks";
 import type { TaskWithLinks } from "@/lib/db/tasks";
 import type { ContactWithCompany } from "@/lib/db/types";
 import { formatDate } from "@/lib/forms";
-import { markTaskDoneAction, snoozeTaskAction } from "./actions";
+import { markTaskDoneAction, snoozeTaskAction } from "@/app/tasks/actions";
 
 function daysBetween(from: Date, to: Date): number {
   const ms = to.getTime() - from.getTime();
@@ -51,7 +52,12 @@ function TaskCard({ task }: { task: TaskWithLinks }) {
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
           <p className="font-medium">{task.title}</p>
-          <p className="text-sm text-destructive">{dueLabel(task.due_date!)}</p>
+          <TaskDueDateEditor
+            taskId={task.id}
+            dueDate={task.due_date}
+            label={dueLabel(task.due_date!)}
+            labelClassName="text-sm text-destructive"
+          />
           {(task.contacts || task.companies) && (
             <p className="text-sm text-muted-foreground">
               {task.contacts && (

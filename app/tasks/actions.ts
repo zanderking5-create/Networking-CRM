@@ -19,3 +19,12 @@ export async function snoozeTaskAction(taskId: string, days: number) {
   revalidatePath("/today");
   revalidatePath("/contacts");
 }
+
+export async function setTaskDueDateAction(taskId: string, formData: FormData) {
+  await requireUser();
+  const dueDate = formData.get("due_date");
+  if (typeof dueDate !== "string" || dueDate === "") return;
+  await updateTaskDueDate(taskId, dueDate);
+  revalidatePath("/today");
+  revalidatePath("/contacts");
+}
