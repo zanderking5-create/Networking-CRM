@@ -61,6 +61,7 @@ if versions matter.
 | `/(app)/capture` | Paste a note → Claude parses → editable preview → confirm |
 | `/(app)/contacts`, `/(app)/contacts/[id]` | List + add form; detail with timeline, open tasks, edit rail |
 | `/(app)/companies`, `/(app)/companies/[id]` | Sortable pipeline table; detail with roles, contacts, timeline, edit rail |
+| `/(app)/roles` | Pipeline board: roles grouped into columns by status |
 | `/(app)/roles/[id]` | Role detail: operating conditions, status, conviction, edit rail |
 | `/api/parse` | POST-only route handler for the capture box (`maxDuration = 30`) |
 
@@ -209,11 +210,16 @@ Every action re-checks `requireUser()`, normalizes `FormData` through
 affected route. No client state, no optimistic UI, no fetch-from-client.
 
 Where a control needs to show/hide, use `<details>/<summary>` rather than
-reaching for `"use client"` — see `components/task-due-date-editor.tsx` and
-`components/contact-cadence-editor.tsx`. The same pattern gates every
-destructive delete: `components/confirm-delete-form.tsx` hides the actual
-submit button behind a `<summary>`, so opening it is a required first step
-before the delete can fire — no client JS, no `window.confirm`.
+reaching for `"use client"` — see `components/task-due-date-editor.tsx`,
+`components/contact-cadence-editor.tsx`, and `components/role-status-editor.tsx`
+(the stage-move control on the `/roles` board card, and the same pattern
+`setRoleStatusAction` was originally built for on the company page's Roles
+list). The same pattern gates every destructive delete:
+`components/confirm-delete-form.tsx` hides the actual submit button behind a
+`<summary>`, so opening it is a required first step before the delete can
+fire — no client JS, no `window.confirm`. **No drag-and-drop anywhere in the
+app** — the `/roles` board moves a role between stages via this same
+form-and-select pattern, not a DnD library or client state, on purpose.
 
 **The capture flow is the one intentional exception.** Only five client
 components exist: `app/login/page.tsx`, `app/reset-password/page.tsx`,
@@ -298,7 +304,7 @@ per-page styling.
   `RowSubtitle` / `RowMeta` / `Pill` / `SectionLabel` / `EmptyState`. `Row
   href=…` + `RowTitle stretch` makes the whole row one click target with a
   single focusable element.
-- `/companies` is the one deliberate exception: `components/company-pipeline-table.tsx`
+- `/companies` is one deliberate exception: `components/company-pipeline-table.tsx`
   renders it as a `<table>`, not through `Row`. It has six independently
   sortable columns, and two of them (contact count, last interaction) are
   cross-table rollups that a single-primary/single-secondary row can't lay
@@ -306,6 +312,17 @@ per-page styling.
   server-side, so the rendered page and a shared link always agree. Reach for
   `Row` first for any new list; only drop to a table if the column count and
   sortability genuinely don't fit it.
+- `/roles` is the other one: a status-grouped pipeline board
+  (`app/(app)/roles/page.tsx`), not a `Row`/`RowList` either. A kanban card
+  needs its content stacked vertically in a narrow column, which is a
+  different shape than `Row`'s one-line primary/secondary/meta layout — the
+  same reasoning as the `/companies` table, just a different mismatch. Each
+  card still reuses `RowMain`/`RowTitle`/`RowSubtitle`/`RowMeta`/`RatingDots`
+  for its text and conviction display rather than hand-rolling those too;
+  only the outer card container and column grid are bespoke. Note `RowTitle`
+  is used *without* `stretch` here — a card has two independent links (role,
+  company) plus a stage-editor form below them, and `stretch`'s full-row
+  overlay would swallow clicks on all but the title.
 - **Color signals meaning, and only one meaning**: conviction and warmth, drawn
   as olive `RatingDots`. Pills, avatars, timeline marks, and status text stay
   neutral. Primary is deep olive; sky-blue is the focus ring / rare accent.

@@ -11,6 +11,24 @@ export type StalledRole = Role & {
   days_since_status_change: number;
 };
 
+export type RoleBoardCard = Role & {
+  companies: Pick<Company, "id" | "name"> | null;
+};
+
+// Every role, for the /roles pipeline board -- grouped into status columns
+// in app code (ROLE_STATUSES order), not fetched per-status, since a
+// personal CRM's role count is small enough that one query beats four.
+export async function listAllRoles(): Promise<RoleBoardCard[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("roles")
+    .select("*, companies(id, name)")
+    .order("conviction", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as RoleBoardCard[];
+}
+
 export async function listRolesForCompany(
   companyId: string,
 ): Promise<RoleWithReferrer[]> {

@@ -43,8 +43,9 @@ export async function updateRoleAction(id: string, formData: FormData) {
   revalidatePath("/today");
 }
 
-// Status-only update, so the Roles list on a company page can move a role
-// along without opening the full form.
+// Status-only update, used by the RoleStatusEditor card control on the
+// /roles pipeline board (and available to the company page's Roles list for
+// the same quick-move-without-opening-the-full-form purpose).
 export async function setRoleStatusAction(id: string, formData: FormData) {
   await requireUser();
   const status = formText(formData, "status");
@@ -52,6 +53,7 @@ export async function setRoleStatusAction(id: string, formData: FormData) {
 
   const role = await updateRole(id, { status });
 
+  revalidatePath("/roles");
   revalidatePath(`/roles/${id}`);
   revalidatePath(`/companies/${role.company_id}`);
   revalidatePath("/today");

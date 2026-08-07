@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, CalendarCheck, PenLine, Users } from "lucide-react";
+import { Briefcase, Building2, CalendarCheck, PenLine, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,7 @@ const items = [
   { href: "/capture", label: "Capture", icon: PenLine },
   { href: "/contacts", label: "Contacts", icon: Users },
   { href: "/companies", label: "Companies", icon: Building2 },
+  { href: "/roles", label: "Roles", icon: Briefcase },
 ];
 
 function isActive(pathname: string, href: string) {
