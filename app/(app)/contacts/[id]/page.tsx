@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
+import { ContactCadenceEditor } from "@/components/contact-cadence-editor";
 import { TaskDueDateEditor } from "@/components/task-due-date-editor";
 import { Timeline } from "@/components/timeline";
 import { Avatar } from "@/components/ui/avatar";
@@ -66,6 +67,10 @@ export default async function ContactDetailPage({
             {company && contact.role && <span aria-hidden="true">·</span>}
             {contact.role && <span>{contact.role}</span>}
             {contact.type && <Pill>{contact.type}</Pill>}
+            <ContactCadenceEditor
+              contactId={contact.id}
+              cadence={contact.cadence}
+            />
             {contact.warmth != null && (
               <span className="flex items-center gap-1.5">
                 <span className="text-xs">Warmth</span>

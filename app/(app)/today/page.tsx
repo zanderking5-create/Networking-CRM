@@ -6,14 +6,15 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DisplayHeading } from "@/components/ui/heading";
 import { RatingDots } from "@/components/ui/rating-dots";
-import { EmptyState, Row, RowList, RowMain, RowMeta, RowSubtitle, RowTitle, SectionLabel } from "@/components/ui/row";
+import { EmptyState, Pill, Row, RowList, RowMain, RowMeta, RowSubtitle, RowTitle, SectionLabel } from "@/components/ui/row";
 import { requireUser } from "@/lib/auth";
 import type { StalledCompany } from "@/lib/db/companies";
 import { listStalledHighConvictionCompanies } from "@/lib/db/companies";
+import type { ColdContact } from "@/lib/db/contacts";
 import { listColdContacts } from "@/lib/db/contacts";
 import { listDueTasks } from "@/lib/db/tasks";
 import type { TaskWithLinks } from "@/lib/db/tasks";
-import type { ContactWithCompany } from "@/lib/db/types";
+import { cadenceLabel } from "@/lib/cadence";
 import { formatDate } from "@/lib/forms";
 import { markTaskDoneAction, snoozeTaskAction } from "@/app/tasks/actions";
 
@@ -148,7 +149,8 @@ function TaskRow({ task }: { task: TaskWithLinks }) {
   );
 }
 
-function ColdContactRow({ contact }: { contact: ContactWithCompany }) {
+function ColdContactRow({ contact }: { contact: ColdContact }) {
+  const cadence = cadenceLabel(contact.cadence);
   return (
     <Row href={`/contacts/${contact.id}`}>
       <Avatar name={contact.name} kind="person" />
@@ -156,13 +158,11 @@ function ColdContactRow({ contact }: { contact: ContactWithCompany }) {
         <RowTitle href={`/contacts/${contact.id}`} stretch>
           {contact.name}
         </RowTitle>
-        <RowSubtitle>
-          {contact.companies?.name ?? "No company"} ·{" "}
-          {sinceLabel(contact.last_touch_at, "never touched")}
-        </RowSubtitle>
+        <RowSubtitle>{contact.companies?.name ?? "No company"}</RowSubtitle>
       </RowMain>
       <RowMeta>
-        <RatingDots value={contact.warmth} label="Warmth" />
+        {cadence && <Pill>{cadence}</Pill>}
+        <span>{sinceLabel(contact.last_touch_at, "never")}</span>
       </RowMeta>
     </Row>
   );
@@ -211,7 +211,7 @@ export default async function TodayPage() {
   await requireUser();
 
   let dueTasks: TaskWithLinks[] = [];
-  let coldContacts: ContactWithCompany[] = [];
+  let coldContacts: ColdContact[] = [];
   let stalledCompanies: StalledCompany[] = [];
   let loadError: string | null = null;
   try {

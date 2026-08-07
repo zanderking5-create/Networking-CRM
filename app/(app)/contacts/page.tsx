@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { RatingDots } from "@/components/ui/rating-dots";
 import { EmptyState, Pill, Row, RowList, RowMain, RowMeta, RowSubtitle, RowTitle, SectionLabel } from "@/components/ui/row";
 import { requireUser } from "@/lib/auth";
+import { CADENCE_OPTIONS } from "@/lib/cadence";
 import { listCompanies } from "@/lib/db/companies";
 import { listContacts } from "@/lib/db/contacts";
 import type { Company, ContactWithCompany } from "@/lib/db/types";
@@ -79,6 +80,22 @@ export default async function ContactsPage() {
             ))}
           </select>
           <Input name="type" placeholder="Type (operator, finance, recruiter)…" />
+          <label className="sr-only" htmlFor="new-contact-cadence">
+            Keep-in-touch cadence
+          </label>
+          <select
+            id="new-contact-cadence"
+            name="cadence"
+            defaultValue=""
+            className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/70"
+          >
+            <option value="">No keep-in-touch cadence</option>
+            {CADENCE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
           <Input
             name="warmth"
             type="number"

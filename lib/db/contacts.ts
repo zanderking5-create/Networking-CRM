@@ -1,3 +1,4 @@
+import { cadenceDays } from "@/lib/cadence";
 import { createClient } from "@/lib/supabase-server";
 import type {
   Contact,
@@ -16,20 +17,56 @@ export async function listContacts(): Promise<ContactWithCompany[]> {
   return (data ?? []) as ContactWithCompany[];
 }
 
-// Warm relationships (warmth >= 4) going stale: never touched, or not
-// touched in 30+ days. Never-touched contacts sort first as the most
-// neglected, then oldest last_touch_at.
-export async function listColdContacts(): Promise<ContactWithCompany[]> {
+export type ColdContact = ContactWithCompany & {
+  cadence_days: number;
+  // Days since last touch; null when the contact has never been touched.
+  days_since_touch: number | null;
+};
+
+// Contacts overdue against their own keep-in-touch cadence. Each contact
+// carries its own threshold, so the comparison can't be a single WHERE
+// clause — we fetch the ones that opted in (cadence not null) and evaluate
+// per row. A personal CRM's contact list is small enough that this stays
+// cheap.
+//
+// Ranking is by overdue *ratio* (days elapsed / cadence interval), not by
+// absolute days, so being three weeks past a weekly cadence outranks being
+// one week past a quarterly one. Never-touched contacts rank first.
+export async function listColdContacts(): Promise<ColdContact[]> {
   const supabase = await createClient();
-  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const { data, error } = await supabase
     .from("contacts")
     .select("*, companies(id, name)")
-    .gte("warmth", 4)
-    .or(`last_touch_at.is.null,last_touch_at.lt.${cutoff}`)
-    .order("last_touch_at", { ascending: true, nullsFirst: true });
+    .not("cadence", "is", null);
   if (error) throw new Error(error.message);
-  return (data ?? []) as ContactWithCompany[];
+
+  const now = Date.now();
+  const dayMs = 24 * 60 * 60 * 1000;
+
+  const scored = ((data ?? []) as ContactWithCompany[]).flatMap((contact) => {
+    const interval = cadenceDays(contact.cadence);
+    // Guards against a cadence value the CHECK constraint would reject.
+    if (interval === null) return [];
+
+    const daysSince =
+      contact.last_touch_at === null
+        ? null
+        : Math.floor((now - new Date(contact.last_touch_at).getTime()) / dayMs);
+
+    // Never touched counts as maximally overdue; otherwise it has to be past
+    // the contact's own interval to qualify.
+    const ratio = daysSince === null ? Infinity : daysSince / interval;
+    if (ratio <= 1) return [];
+
+    const cold: ColdContact = {
+      ...contact,
+      cadence_days: interval,
+      days_since_touch: daysSince,
+    };
+    return [{ cold, ratio }];
+  });
+
+  return scored.sort((a, b) => b.ratio - a.ratio).map(({ cold }) => cold);
 }
 
 export async function listContactsByCompany(

@@ -34,6 +34,7 @@ export type Contact = {
   linkedin_url: string | null;
   email: string | null;
   last_touch_at: string | null;
+  cadence: string | null; // weekly | monthly | quarterly; null = not tracked
   created_at: string;
 };
 
