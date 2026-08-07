@@ -108,7 +108,7 @@ function ContactFields({
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
         {result.matched_contact_id
-          ? "Will update the existing contact matched below."
+          ? "Will update the existing contact matched below — fields left blank here won't overwrite what's already saved."
           : "Will create a new contact."}
       </p>
       {result.matched_contact_id && (
@@ -202,7 +202,7 @@ function CompanyFields({
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
         {result.matched_company_id
-          ? "Will update the existing company matched below."
+          ? "Will update the existing company matched below — fields left blank here won't overwrite what's already saved."
           : "Will create a new company."}
       </p>
       {result.matched_company_id && (

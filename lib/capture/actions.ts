@@ -52,6 +52,21 @@ function toTimestamp(dateStr: string): string | null {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
+// On create, a null is a real value -- "no answer yet" for a field the note
+// didn't touch. On update it means something different: the note simply
+// didn't mention that field, and the wire schema's sentinel mapping (see
+// lib/capture/schema.ts) can't tell "not mentioned" apart from "clear this."
+// Sending those nulls through an update would blank out whatever was already
+// saved on every re-capture of an existing contact or company, so an update
+// only ever patches the fields the note actually gave a value for. Clearing a
+// field on purpose is still possible -- that's what the contact/company edit
+// forms are for.
+function definedOnly<T extends object>(fields: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(fields).filter(([, value]) => value !== null),
+  ) as Partial<T>;
+}
+
 export async function confirmCaptureAction(
   input: ParseResult,
   rawText: string,
@@ -86,7 +101,7 @@ export async function confirmCaptureAction(
           email: result.contact.email,
         };
         if (result.matched_contact_id) {
-          await updateContact(result.matched_contact_id, fields);
+          await updateContact(result.matched_contact_id, definedOnly(fields));
         } else {
           await createContact(fields);
         }
@@ -95,7 +110,7 @@ export async function confirmCaptureAction(
 
       case "company": {
         if (result.matched_company_id) {
-          await updateCompany(result.matched_company_id, result.company);
+          await updateCompany(result.matched_company_id, definedOnly(result.company));
         } else {
           await createCompany(result.company);
         }

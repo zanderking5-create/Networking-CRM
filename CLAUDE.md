@@ -254,6 +254,15 @@ stored anywhere** — not in `.env.local`, not in Vercel, not in a commit.
    then writes — resolving/creating the company and contact, inserting the
    interaction with its `raw_text`, creating any follow-up task, and bumping the
    contact's `last_touch_at` (and `warmth`, if the model suggested a change).
+5. When a `contact` or `company` note matches an existing record,
+   `confirmCaptureAction` only patches the fields the note actually gave a
+   value for (`definedOnly()` drops the rest before the update). A field the
+   note didn't mention comes back from `wireToParseResult()` as `null`, and a
+   full-object update would otherwise blank out whatever was already saved
+   there — this was a real data-loss bug (recapturing "Sarah got promoted to
+   VP Eng" wiped her hook/source/warmth/etc.) before the guard was added. The
+   `interaction` and `task` branches don't need this: they only ever create
+   rows or touch specific known fields, never a full-object update.
 
 The capture flow does not create or update `cadence` or `roles` — deliberately
 deferred until the owner has used the roles UI directly and decided whether
