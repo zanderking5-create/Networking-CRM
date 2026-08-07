@@ -6,11 +6,14 @@ import { Button } from "@/components/ui/button";
 import { DisplayHeading } from "@/components/ui/heading";
 import { Input } from "@/components/ui/input";
 import { RatingDots } from "@/components/ui/rating-dots";
-import { EmptyState, Pill, Row, RowList, RowMain, RowSubtitle, RowTitle, SectionLabel } from "@/components/ui/row";
+import { EmptyState, Pill, Row, RowList, RowMain, RowMeta, RowSubtitle, RowTitle, SectionLabel } from "@/components/ui/row";
 import { requireUser } from "@/lib/auth";
 import { getCompany } from "@/lib/db/companies";
-import { listContactsByCompany } from "@/lib/db/contacts";
+import { listContacts, listContactsByCompany } from "@/lib/db/contacts";
 import { listInteractionsForContacts } from "@/lib/db/interactions";
+import { listRolesForCompany } from "@/lib/db/roles";
+import { ROLE_SOURCES, ROLE_STATUSES, roleSourceLabel, roleStatusLabel } from "@/lib/roles";
+import { createRoleAction } from "../../roles/actions";
 import { deleteCompanyAction, updateCompanyAction } from "../actions";
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -31,9 +34,11 @@ export default async function CompanyDetailPage({
 }) {
   await requireUser();
   const { id } = await params;
-  const [company, contacts] = await Promise.all([
+  const [company, contacts, roles, allContacts] = await Promise.all([
     getCompany(id),
     listContactsByCompany(id),
+    listRolesForCompany(id),
+    listContacts(),
   ]);
   if (!company) notFound();
 
@@ -43,6 +48,7 @@ export default async function CompanyDetailPage({
 
   const update = updateCompanyAction.bind(null, company.id);
   const remove = deleteCompanyAction.bind(null, company.id);
+  const addRole = createRoleAction.bind(null, company.id);
 
   return (
     <>
@@ -69,6 +75,101 @@ export default async function CompanyDetailPage({
           than sitting between you and them. */}
       <div className="grid items-start gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="space-y-10">
+          <section className="space-y-1">
+            <SectionLabel count={roles.length}>Roles</SectionLabel>
+            {roles.length === 0 ? (
+              <EmptyState>
+                No roles tracked here yet — add the specific seat below.
+              </EmptyState>
+            ) : (
+              <RowList>
+                {roles.map((role) => (
+                  <Row key={role.id} href={`/roles/${role.id}`}>
+                    <RowMain>
+                      <RowTitle href={`/roles/${role.id}`} stretch>
+                        {role.title ?? "Untitled role"}
+                      </RowTitle>
+                      <RowSubtitle>
+                        {[roleSourceLabel(role.source), role.contacts?.name && `via ${role.contacts.name}`]
+                          .filter(Boolean)
+                          .join(" · ") || "No source recorded"}
+                      </RowSubtitle>
+                    </RowMain>
+                    <RowMeta>
+                      <Pill>{roleStatusLabel(role.status)}</Pill>
+                      <RatingDots value={role.conviction} label="Conviction" />
+                    </RowMeta>
+                  </Row>
+                ))}
+              </RowList>
+            )}
+
+            <details className="pt-3">
+              <summary className="inline-flex cursor-pointer items-center rounded bg-muted px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
+                Add a role
+              </summary>
+              <form action={addRole} className="mt-3 space-y-2">
+                <Input name="title" placeholder="Title (e.g. BizOps Lead)…" />
+                <label className="sr-only" htmlFor="new-role-status">
+                  Status
+                </label>
+                <select
+                  id="new-role-status"
+                  name="status"
+                  defaultValue="watching"
+                  className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/70"
+                >
+                  {ROLE_STATUSES.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+                <label className="sr-only" htmlFor="new-role-source">
+                  Source
+                </label>
+                <select
+                  id="new-role-source"
+                  name="source"
+                  defaultValue=""
+                  className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/70"
+                >
+                  <option value="">Source unknown</option>
+                  {ROLE_SOURCES.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+                <label className="sr-only" htmlFor="new-role-referrer">
+                  Referrer
+                </label>
+                <select
+                  id="new-role-referrer"
+                  name="referrer_contact_id"
+                  defaultValue=""
+                  className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/70"
+                >
+                  <option value="">No referrer</option>
+                  {allContacts.map((contact) => (
+                    <option key={contact.id} value={contact.id}>
+                      {contact.name}
+                    </option>
+                  ))}
+                </select>
+                <Input
+                  name="conviction"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={5}
+                  placeholder="Conviction (1-5)"
+                />
+                <Button type="submit">Add Role</Button>
+              </form>
+            </details>
+          </section>
+
           <section className="space-y-1">
             <SectionLabel count={contacts.length}>Contacts</SectionLabel>
             {contacts.length === 0 ? (

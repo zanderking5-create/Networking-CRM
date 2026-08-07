@@ -47,10 +47,41 @@ export type ContactWithCompany = Contact & {
   companies: Pick<Company, "id" | "name"> | null;
 };
 
+// A specific seat being tracked, separate from the company. Role-level
+// operating conditions (autonomy_scope, social_pct,
+// founder_delegation_style) live here; the same columns still exist on
+// companies pending a manual data migration.
+export type Role = {
+  id: string;
+  company_id: string;
+  title: string | null;
+  status: string; // watching | in conversation | interviewing | closed
+  conviction: number | null; // 1-5, how much the user wants THIS seat
+  source: string | null; // warm intro | founder direct | recruiter | inbound | cold apply
+  referrer_contact_id: string | null;
+  job_url: string | null;
+  autonomy_scope: string | null;
+  social_pct: number | null;
+  founder_delegation_style: string | null;
+  notes: string | null;
+  // Bumped whenever status changes — this is what makes stall detection work.
+  status_changed_at: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RoleInsert = { company_id: string } & Partial<
+  Omit<Role, "id" | "company_id" | "created_at" | "updated_at">
+>;
+export type RoleUpdate = Partial<
+  Omit<Role, "id" | "company_id" | "created_at" | "updated_at">
+>;
+
 export type Interaction = {
   id: string;
   contact_id: string;
   company_id: string | null;
+  role_id: string | null;
   direction: string | null; // in | out
   channel: string | null; // email | linkedin | call | inperson
   summary: string | null;
@@ -63,6 +94,7 @@ export type Task = {
   id: string;
   contact_id: string | null;
   company_id: string | null;
+  role_id: string | null;
   title: string;
   due_date: string | null;
   status: string; // open | done | snoozed

@@ -12,6 +12,9 @@ import type { StalledCompany } from "@/lib/db/companies";
 import { listStalledHighConvictionCompanies } from "@/lib/db/companies";
 import type { ColdContact } from "@/lib/db/contacts";
 import { listColdContacts } from "@/lib/db/contacts";
+import type { StalledRole } from "@/lib/db/roles";
+import { listStalledRoles } from "@/lib/db/roles";
+import { roleStatusLabel } from "@/lib/roles";
 import { listDueTasks } from "@/lib/db/tasks";
 import type { TaskWithLinks } from "@/lib/db/tasks";
 import { cadenceLabel } from "@/lib/cadence";
@@ -187,6 +190,24 @@ function StalledCompanyRow({ company }: { company: StalledCompany }) {
   );
 }
 
+function StalledRoleRow({ role }: { role: StalledRole }) {
+  const days = role.days_since_status_change;
+  return (
+    <Row href={`/roles/${role.id}`}>
+      <RowMain>
+        <RowTitle href={`/roles/${role.id}`} stretch>
+          {role.title ?? "Untitled role"}
+        </RowTitle>
+        <RowSubtitle>{role.companies?.name ?? "No company"}</RowSubtitle>
+      </RowMain>
+      <RowMeta>
+        <Pill>{roleStatusLabel(role.status)}</Pill>
+        <span>{days === 1 ? "1 day" : `${days} days`}</span>
+      </RowMeta>
+    </Row>
+  );
+}
+
 function Section({
   title,
   count,
@@ -213,12 +234,14 @@ export default async function TodayPage() {
   let dueTasks: TaskWithLinks[] = [];
   let coldContacts: ColdContact[] = [];
   let stalledCompanies: StalledCompany[] = [];
+  let stalledRoles: StalledRole[] = [];
   let loadError: string | null = null;
   try {
-    [dueTasks, coldContacts, stalledCompanies] = await Promise.all([
+    [dueTasks, coldContacts, stalledCompanies, stalledRoles] = await Promise.all([
       listDueTasks(),
       listColdContacts(),
       listStalledHighConvictionCompanies(),
+      listStalledRoles(),
     ]);
   } catch (error) {
     loadError = error instanceof Error ? error.message : String(error);
@@ -228,7 +251,8 @@ export default async function TodayPage() {
     !loadError &&
     dueTasks.length === 0 &&
     coldContacts.length === 0 &&
-    stalledCompanies.length === 0;
+    stalledCompanies.length === 0 &&
+    stalledRoles.length === 0;
 
   const dateLabel = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -261,8 +285,8 @@ export default async function TodayPage() {
               You&rsquo;re all caught up.
             </p>
             <p className="mx-auto max-w-sm text-sm text-muted-foreground">
-              No overdue tasks, no relationships going cold, no stalled top
-              targets. Nothing needs you right now.
+              No overdue tasks, no relationships going cold, no stalled targets
+              or roles. Nothing needs you right now.
             </p>
           </div>
         </div>
@@ -273,6 +297,7 @@ export default async function TodayPage() {
               { label: "Due", value: dueTasks.length },
               { label: "Going Cold", value: coldContacts.length },
               { label: "Stalled", value: stalledCompanies.length },
+              { label: "Roles", value: stalledRoles.length },
             ]}
           />
 
@@ -307,6 +332,16 @@ export default async function TodayPage() {
               >
                 {stalledCompanies.map((company) => (
                   <StalledCompanyRow key={company.id} company={company} />
+                ))}
+              </Section>
+
+              <Section
+                title="Roles stalled"
+                count={stalledRoles.length}
+                emptyMessage="No live roles have gone quiet."
+              >
+                {stalledRoles.map((role) => (
+                  <StalledRoleRow key={role.id} role={role} />
                 ))}
               </Section>
             </aside>
