@@ -1,3 +1,5 @@
+import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { EmptyState, Pill, Row, RowList, RowMain, RowMeta, RowSubtitle, RowTitle } from "@/components/ui/row";
 import { formatDate } from "@/lib/forms";
 
 export type TimelineEntry = {
@@ -11,16 +13,24 @@ export type TimelineEntry = {
   contactName?: string | null;
 };
 
-function DirectionBadge({ direction }: { direction: string | null }) {
-  if (!direction) return null;
-  const isOut = direction === "out";
+function directionLabel(direction: string | null): string | null {
+  if (direction === "out") return "Outreach";
+  if (direction === "in") return "Inbound";
+  return null;
+}
+
+// Direction as a glyph, matching the leading-anchor slot every other row type
+// uses (checkbox on tasks, avatar on people/companies). Stays neutral —
+// direction is a fact, not a status worth coloring.
+function DirectionMark({ direction }: { direction: string | null }) {
+  const Icon = direction === "in" ? ArrowDownLeft : ArrowUpRight;
   return (
-    <span
-      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-        isOut ? "bg-primary/10 text-primary" : "bg-sky/10 text-sky"
-      }`}
-    >
-      {isOut ? "out" : "in"}
+    <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary">
+      <Icon
+        aria-hidden="true"
+        strokeWidth={2}
+        className="size-3.5 text-secondary-foreground/70"
+      />
     </span>
   );
 }
@@ -33,29 +43,31 @@ export function Timeline({
   emptyMessage?: string;
 }) {
   if (items.length === 0) {
-    return <p className="text-sm text-muted-foreground">{emptyMessage}</p>;
+    return <EmptyState>{emptyMessage}</EmptyState>;
   }
 
   return (
-    <ol className="space-y-5 border-l border-border pl-5">
-      {items.map((item) => (
-        <li key={item.id} className="relative">
-          <span className="absolute -left-[23px] top-1 h-2 w-2 rounded-full bg-primary" />
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="font-medium">{formatDate(item.occurred_at)}</span>
-            <DirectionBadge direction={item.direction} />
-            {item.channel && (
-              <span className="text-muted-foreground">{item.channel}</span>
-            )}
-            {item.contactName && (
-              <span className="text-muted-foreground">· {item.contactName}</span>
-            )}
-          </div>
-          {item.summary && (
-            <p className="mt-1 text-sm text-muted-foreground">{item.summary}</p>
-          )}
-        </li>
-      ))}
-    </ol>
+    <RowList>
+      {items.map((item) => {
+        const context = [directionLabel(item.direction), item.contactName]
+          .filter(Boolean)
+          .join(" · ");
+        return (
+          <Row key={item.id} className="items-start">
+            <DirectionMark direction={item.direction} />
+            <RowMain>
+              <RowTitle className="whitespace-normal text-pretty">
+                {item.summary ?? "Interaction"}
+              </RowTitle>
+              {context && <RowSubtitle>{context}</RowSubtitle>}
+            </RowMain>
+            <RowMeta>
+              {item.channel && <Pill>{item.channel}</Pill>}
+              <span className="mt-0.5">{formatDate(item.occurred_at)}</span>
+            </RowMeta>
+          </Row>
+        );
+      })}
+    </RowList>
   );
 }

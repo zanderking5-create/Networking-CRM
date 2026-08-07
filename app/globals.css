@@ -7,9 +7,14 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  /* Fix: this previously self-referenced (--font-sans: var(--font-sans)),
+     an invalid circular value that silently fell back to the browser's
+     default serif everywhere in the app — Geist Sans was never actually
+     rendering. Point it at the real next/font variable instead. */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  /* Display serif — major page headings only (Today, contact/company names). */
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -69,9 +74,11 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.9 0 0);
   --input: oklch(0.88 0 0);
-  /* Sky-blue focus ring — the accent color's most visible touchpoint. */
+  /* Sky-blue focus ring — used sparingly: this is the accent's main job. */
   --ring: oklch(0.5 0.09 232);
-  /* Sky-blue accent for deliberate highlights (badges, inbound timeline entries). */
+  /* Sky-blue accent, reserved for the rare deliberate highlight. Not used
+     for badges or status — color signals meaning only for conviction/warmth
+     (see components/rating-dots.tsx), which stay in olive tints. */
   --sky: oklch(0.48 0.095 230);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);

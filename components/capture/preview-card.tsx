@@ -10,21 +10,18 @@ const selectClass =
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="block space-y-1 text-sm">
-      <span className="font-medium">{label}</span>
+    <label className="block space-y-1.5 text-sm">
+      <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        {label}
+      </span>
       {children}
     </label>
   );
 }
 
 function ConfidenceBadge({ confidence }: { confidence: "high" | "medium" | "low" }) {
-  const styles: Record<string, string> = {
-    high: "bg-secondary text-secondary-foreground",
-    medium: "bg-muted text-foreground",
-    low: "bg-destructive/10 text-destructive",
-  };
   return (
-    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${styles[confidence]}`}>
+    <span className="text-xs text-muted-foreground">
       {confidence} confidence
     </span>
   );

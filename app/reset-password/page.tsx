@@ -75,7 +75,7 @@ export default function ResetPasswordPage() {
               className="w-full"
               disabled={status === "loading"}
             >
-              {status === "loading" ? "Saving..." : "Set password"}
+              {status === "loading" ? "Saving…" : "Set Password"}
             </Button>
             {error && (
               <p className="text-sm text-destructive text-center">{error}</p>

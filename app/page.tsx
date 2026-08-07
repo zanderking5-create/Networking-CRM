@@ -7,7 +7,7 @@ export default function Home() {
       <h1 className="text-2xl font-semibold tracking-tight text-primary">
         Networking CRM
       </h1>
-      <Button nativeButton={false} render={<Link href="/login">Log in</Link>} />
+      <Button nativeButton={false} render={<Link href="/login">Log In</Link>} />
     </main>
   );
 }

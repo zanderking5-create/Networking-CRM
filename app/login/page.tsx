@@ -63,13 +63,18 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-muted/40 p-8">
       <div className="w-full max-w-sm space-y-8">
-        <div className="space-y-1 text-center">
-          <p className="text-sm font-semibold tracking-tight text-primary">
-            Networking CRM
-          </p>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {mode === "signin" ? "Welcome back" : "Reset your password"}
-          </h1>
+        <div className="flex flex-col items-center gap-3 text-center">
+          <span className="flex size-8 items-center justify-center rounded-lg bg-primary font-serif text-sm font-semibold text-primary-foreground">
+            N
+          </span>
+          <div className="space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              Networking CRM
+            </p>
+            <h1 className="text-balance font-serif text-3xl font-medium tracking-tight">
+              {mode === "signin" ? "Welcome back" : "Reset your password"}
+            </h1>
+          </div>
         </div>
 
         <div className="rounded-xl border border-border bg-card p-8 shadow-sm">
@@ -95,7 +100,7 @@ export default function LoginPage() {
                   className="w-full"
                   disabled={status === "loading"}
                 >
-                  {status === "loading" ? "Logging in..." : "Log in"}
+                  {status === "loading" ? "Logging In…" : "Log In"}
                 </Button>
                 {error && (
                   <p className="text-sm text-destructive text-center">
@@ -132,8 +137,8 @@ export default function LoginPage() {
                     disabled={resetStatus === "loading"}
                   >
                     {resetStatus === "loading"
-                      ? "Sending..."
-                      : "Send password link"}
+                      ? "Sending…"
+                      : "Send Password Link"}
                   </Button>
                   {resetError && (
                     <p className="text-sm text-destructive text-center">
