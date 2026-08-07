@@ -204,7 +204,10 @@ affected route. No client state, no optimistic UI, no fetch-from-client.
 
 Where a control needs to show/hide, use `<details>/<summary>` rather than
 reaching for `"use client"` — see `components/task-due-date-editor.tsx` and
-`components/contact-cadence-editor.tsx`.
+`components/contact-cadence-editor.tsx`. The same pattern gates every
+destructive delete: `components/confirm-delete-form.tsx` hides the actual
+submit button behind a `<summary>`, so opening it is a required first step
+before the delete can fire — no client JS, no `window.confirm`.
 
 **The capture flow is the one intentional exception.** Only five client
 components exist: `app/login/page.tsx`, `app/reset-password/page.tsx`,

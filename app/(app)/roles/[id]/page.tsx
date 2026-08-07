@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
+import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
 import { Button } from "@/components/ui/button";
 import { DisplayHeading } from "@/components/ui/heading";
 import { Input } from "@/components/ui/input";
@@ -183,11 +184,7 @@ export default async function RoleDetailPage({
         </div>
       </form>
 
-      <form action={remove}>
-        <Button variant="destructive" size="sm" type="submit">
-          Delete Role
-        </Button>
-      </form>
+      <ConfirmDeleteForm action={remove} label="Delete Role" />
     </>
   );
 }

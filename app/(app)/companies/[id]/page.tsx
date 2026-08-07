@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
+import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
 import { Timeline } from "@/components/timeline";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -271,11 +272,13 @@ export default async function CompanyDetailPage({
             <Button type="submit">Save</Button>
           </form>
 
-          <form action={remove} className="border-t border-border/60 pt-4">
-            <Button variant="destructive" size="sm" type="submit">
-              Delete Company
-            </Button>
-          </form>
+          <div className="border-t border-border/60 pt-4">
+            <ConfirmDeleteForm
+              action={remove}
+              label="Delete Company"
+              warning="This also permanently deletes every role tracked here."
+            />
+          </div>
         </aside>
       </div>
     </>

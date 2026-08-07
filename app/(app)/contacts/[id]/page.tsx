@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
+import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
 import { ContactCadenceEditor } from "@/components/contact-cadence-editor";
 import { TaskDueDateEditor } from "@/components/task-due-date-editor";
 import { Timeline } from "@/components/timeline";
@@ -183,11 +184,13 @@ export default async function ContactDetailPage({
             <Button type="submit">Save</Button>
           </form>
 
-          <form action={remove} className="border-t border-border/60 pt-4">
-            <Button variant="destructive" size="sm" type="submit">
-              Delete Contact
-            </Button>
-          </form>
+          <div className="border-t border-border/60 pt-4">
+            <ConfirmDeleteForm
+              action={remove}
+              label="Delete Contact"
+              warning="This also permanently deletes every interaction and open task tied to them."
+            />
+          </div>
         </aside>
       </div>
     </>
