@@ -1,21 +1,29 @@
-import { Avatar } from "@/components/ui/avatar";
+import { CompanyPipelineTable } from "@/components/company-pipeline-table";
 import { Button } from "@/components/ui/button";
 import { DisplayHeading } from "@/components/ui/heading";
 import { Input } from "@/components/ui/input";
-import { RatingDots } from "@/components/ui/rating-dots";
-import { EmptyState, Pill, Row, RowList, RowMain, RowMeta, RowSubtitle, RowTitle, SectionLabel } from "@/components/ui/row";
+import { EmptyState, SectionLabel } from "@/components/ui/row";
 import { requireUser } from "@/lib/auth";
-import { listCompanies } from "@/lib/db/companies";
-import type { Company } from "@/lib/db/types";
+import { companySortColumn, parseCompanySort } from "@/lib/company-sort";
+import { listCompanyPipeline } from "@/lib/db/companies";
+import type { CompanyPipelineRow } from "@/lib/db/companies";
 import { createCompanyAction } from "./actions";
 
-export default async function CompaniesPage() {
+export default async function CompaniesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   await requireUser();
 
-  let companies: Company[] = [];
+  // Sort lives in the URL, not in client state — the ordering is applied
+  // server-side, so the rendered page and the link you'd share always agree.
+  const sort = parseCompanySort(await searchParams);
+
+  let companies: CompanyPipelineRow[] = [];
   let loadError: string | null = null;
   try {
-    companies = await listCompanies();
+    companies = await listCompanyPipeline(sort);
   } catch (error) {
     loadError = error instanceof Error ? error.message : String(error);
   }
@@ -25,7 +33,9 @@ export default async function CompaniesPage() {
       <DisplayHeading className="text-3xl">Companies</DisplayHeading>
 
       <section>
-        <SectionLabel count={companies.length}>Ranked by conviction</SectionLabel>
+        <SectionLabel count={companies.length}>
+          Ranked by {companySortColumn(sort.key).label.toLowerCase()}
+        </SectionLabel>
         {loadError ? (
           <p className="text-sm text-destructive">
             Could not load companies: {loadError}. If the tables don&apos;t exist
@@ -35,30 +45,7 @@ export default async function CompaniesPage() {
         ) : companies.length === 0 ? (
           <EmptyState>No companies yet — add your first one below.</EmptyState>
         ) : (
-          <RowList>
-            {companies.map((company) => {
-              // Only render a subtitle when there is something to say — an
-              // em-dash placeholder on every unfilled company reads as broken.
-              const subtitle = [company.stage, company.geography]
-                .filter(Boolean)
-                .join(" · ");
-              return (
-                <Row key={company.id} href={`/companies/${company.id}`}>
-                  <Avatar name={company.name} kind="company" />
-                  <RowMain>
-                    <RowTitle href={`/companies/${company.id}`} stretch>
-                      {company.name}
-                    </RowTitle>
-                    {subtitle && <RowSubtitle>{subtitle}</RowSubtitle>}
-                  </RowMain>
-                  <RowMeta>
-                    {company.status && <Pill>{company.status}</Pill>}
-                    <RatingDots value={company.conviction} label="Conviction" />
-                  </RowMeta>
-                </Row>
-              );
-            })}
-          </RowList>
+          <CompanyPipelineTable rows={companies} sort={sort} />
         )}
       </section>
 

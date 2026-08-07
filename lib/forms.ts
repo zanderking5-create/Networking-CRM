@@ -31,6 +31,26 @@ export function toDatetimeLocal(timestamp: string | null): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+// Compact relative age, e.g. "12d ago" — for dense table cells where the
+// long form ("12 days ago") or an absolute date would dominate a column
+// that's only meant to be scanned.
+export function formatRelativeShort(
+  value: string | null,
+  emptyLabel = "never",
+): string {
+  if (!value) return emptyLabel;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return emptyLabel;
+
+  const days = Math.floor(
+    (Date.now() - date.getTime()) / (24 * 60 * 60 * 1000),
+  );
+  if (days <= 0) return "today";
+  if (days < 30) return `${days}d ago`;
+  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
+  return `${Math.floor(days / 365)}y ago`;
+}
+
 // Format a timestamptz or date string for display, e.g. "Aug 6, 2026".
 export function formatDate(value: string | null): string {
   if (!value) return "—";
