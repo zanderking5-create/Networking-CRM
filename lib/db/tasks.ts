@@ -6,17 +6,42 @@ export type TaskWithLinks = Task & {
   companies: Pick<Company, "id" | "name"> | null;
 };
 
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 // Open tasks due today or earlier -- the "what do I owe" list for the Today
 // dashboard, oldest due date first.
 export async function listDueTasks(): Promise<TaskWithLinks[]> {
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIso();
   const { data, error } = await supabase
     .from("tasks")
     .select("*, contacts(id, name), companies(id, name)")
     .eq("status", "open")
     .not("due_date", "is", null)
     .lte("due_date", today)
+    .order("due_date", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as TaskWithLinks[];
+}
+
+// Open tasks due in the next 7 days, excluding today (today and earlier are
+// listDueTasks' territory) -- advance notice for the Today dashboard's
+// "Upcoming" section, oldest due date first.
+export async function listUpcomingTasks(): Promise<TaskWithLinks[]> {
+  const supabase = await createClient();
+  const today = todayIso();
+  const horizon = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("*, contacts(id, name), companies(id, name)")
+    .eq("status", "open")
+    .not("due_date", "is", null)
+    .gt("due_date", today)
+    .lte("due_date", horizon)
     .order("due_date", { ascending: true });
   if (error) throw new Error(error.message);
   return (data ?? []) as TaskWithLinks[];

@@ -57,7 +57,7 @@ if versions matter.
 | `/login` | Client component: email+password sign-in, plus password-reset request |
 | `/reset-password` | Client component: sets a new password after the email link |
 | `/auth/callback` | Exchanges the reset/confirm code for a session, redirects to `next` (default `/today`) |
-| `/(app)/today` | Dashboard: due tasks, going-cold contacts, stalled high-conviction companies |
+| `/(app)/today` | Dashboard: due + upcoming tasks, going-cold contacts, stalled high-conviction companies, stalled roles |
 | `/(app)/capture` | Paste a note → Claude parses → editable preview → confirm |
 | `/(app)/contacts`, `/(app)/contacts/[id]` | List + add form; detail with timeline, open tasks, edit rail |
 | `/(app)/companies`, `/(app)/companies/[id]` | Sortable pipeline table; detail with roles, contacts, timeline, edit rail |
@@ -180,6 +180,12 @@ row counts are tiny, so they're deliberately computed in TypeScript:
   conversation` or `interviewing` (`ACTIVE_ROLE_STATUSES`, the only statuses
   considered to have live momentum) whose `status_changed_at` is more than
   `ROLE_STALL_DAYS` (10) days old.
+
+`/today` runs its five queries (due tasks, upcoming tasks, cold contacts,
+stalled companies, stalled roles) through `Promise.allSettled`, not
+`Promise.all` — each section renders its own error independently
+(`unwrap()` in `app/(app)/today/page.tsx`) rather than one failing query
+blanking the whole dashboard. Keep that pattern if you add a sixth section.
 
 ## Conventions — don't break these
 

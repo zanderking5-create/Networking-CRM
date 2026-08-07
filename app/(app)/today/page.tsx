@@ -15,7 +15,7 @@ import { listColdContacts } from "@/lib/db/contacts";
 import type { StalledRole } from "@/lib/db/roles";
 import { listStalledRoles } from "@/lib/db/roles";
 import { roleStatusLabel } from "@/lib/roles";
-import { listDueTasks } from "@/lib/db/tasks";
+import { listDueTasks, listUpcomingTasks } from "@/lib/db/tasks";
 import type { TaskWithLinks } from "@/lib/db/tasks";
 import { cadenceLabel } from "@/lib/cadence";
 import { formatDate } from "@/lib/forms";
@@ -37,6 +37,12 @@ function dueLabel(dueDate: string): string {
   if (days <= 0) return "Due today";
   if (days === 1) return "Overdue by 1 day";
   return `Overdue by ${days} days`;
+}
+
+function upcomingLabel(dueDate: string): string {
+  const daysUntil = -overdueDays(dueDate);
+  if (daysUntil === 1) return "Due tomorrow";
+  return `Due in ${daysUntil} days`;
 }
 
 // Compact form — the watchlist lives in a narrow rail, where a full date
@@ -77,7 +83,13 @@ function StatStrip({
   );
 }
 
-function TaskRow({ task }: { task: TaskWithLinks }) {
+function TaskRow({
+  task,
+  dueDateLabel,
+}: {
+  task: TaskWithLinks;
+  dueDateLabel: (dueDate: string) => string;
+}) {
   const markDone = markTaskDoneAction.bind(null, task.id);
   const snoozeDay = snoozeTaskAction.bind(null, task.id, 1);
   const snoozeWeek = snoozeTaskAction.bind(null, task.id, 7);
@@ -104,37 +116,42 @@ function TaskRow({ task }: { task: TaskWithLinks }) {
 
       <RowMain>
         <RowTitle>{task.title}</RowTitle>
-        <p className="truncate text-xs text-muted-foreground">
-          <TaskDueDateEditor
-            taskId={task.id}
-            dueDate={task.due_date}
-            label={dueLabel(task.due_date!)}
-            labelClassName={isOverdue ? "font-medium text-foreground" : undefined}
-          />
-          {(task.contacts || task.companies) && (
-            <>
-              {" · "}
-              {task.contacts && (
-                <Link
-                  href={`/contacts/${task.contacts.id}`}
-                  className="transition-colors hover:text-primary"
-                >
-                  {task.contacts.name}
-                </Link>
-              )}
-              {task.contacts && task.companies && " · "}
-              {task.companies && (
-                <Link
-                  href={`/companies/${task.companies.id}`}
-                  className="transition-colors hover:text-primary"
-                >
-                  {task.companies.name}
-                </Link>
-              )}
-            </>
-          )}
-        </p>
+        {(task.contacts || task.companies) && (
+          <RowSubtitle>
+            {task.contacts && (
+              <Link
+                href={`/contacts/${task.contacts.id}`}
+                className="transition-colors hover:text-primary"
+              >
+                {task.contacts.name}
+              </Link>
+            )}
+            {task.contacts && task.companies && " · "}
+            {task.companies && (
+              <Link
+                href={`/companies/${task.companies.id}`}
+                className="transition-colors hover:text-primary"
+              >
+                {task.companies.name}
+              </Link>
+            )}
+          </RowSubtitle>
+        )}
       </RowMain>
+
+      {/* The due-date editor renders a <details> internally, which can't
+          nest inside RowSubtitle (a <p>) -- the browser silently closes the
+          paragraph early and the intended styling never applies. RowMeta is
+          a <div>, so it's a safe home for it. This is the shape the audit
+          flagged as invalid HTML; don't move it back inside RowSubtitle. */}
+      <RowMeta>
+        <TaskDueDateEditor
+          taskId={task.id}
+          dueDate={task.due_date}
+          label={dueDateLabel(task.due_date!)}
+          labelClassName={isOverdue ? "font-medium text-foreground" : undefined}
+        />
+      </RowMeta>
 
       <div className="flex shrink-0 items-center gap-1">
         <form action={snoozeDay}>
@@ -212,47 +229,81 @@ function Section({
   title,
   count,
   emptyMessage,
+  error,
   children,
 }: {
   title: string;
   count: number;
   emptyMessage: string;
+  error?: string | null;
   children: ReactNode;
 }) {
   return (
     <section>
       {/* No count here — the stat strip above already carries the numbers. */}
       <SectionLabel>{title}</SectionLabel>
-      {count === 0 ? <EmptyState>{emptyMessage}</EmptyState> : <RowList>{children}</RowList>}
+      {error ? (
+        <p className="text-sm text-destructive">Could not load: {error}.</p>
+      ) : count === 0 ? (
+        <EmptyState>{emptyMessage}</EmptyState>
+      ) : (
+        <RowList>{children}</RowList>
+      )}
     </section>
   );
+}
+
+type SectionResult<T> = { data: T; error: string | null };
+
+// Each of the five dashboard queries is independent, so one failing (a
+// missing table, a bad query) degrades only its own section instead of
+// blanking the whole page the way a single shared try/catch around
+// Promise.all used to.
+function unwrap<T>(
+  result: PromiseSettledResult<T>,
+  fallback: T,
+): SectionResult<T> {
+  if (result.status === "fulfilled") return { data: result.value, error: null };
+  const reason = result.reason;
+  return {
+    data: fallback,
+    error: reason instanceof Error ? reason.message : String(reason),
+  };
 }
 
 export default async function TodayPage() {
   await requireUser();
 
-  let dueTasks: TaskWithLinks[] = [];
-  let coldContacts: ColdContact[] = [];
-  let stalledCompanies: StalledCompany[] = [];
-  let stalledRoles: StalledRole[] = [];
-  let loadError: string | null = null;
-  try {
-    [dueTasks, coldContacts, stalledCompanies, stalledRoles] = await Promise.all([
+  const [dueResult, upcomingResult, coldResult, stalledCompanyResult, stalledRoleResult] =
+    await Promise.allSettled([
       listDueTasks(),
+      listUpcomingTasks(),
       listColdContacts(),
       listStalledHighConvictionCompanies(),
       listStalledRoles(),
     ]);
-  } catch (error) {
-    loadError = error instanceof Error ? error.message : String(error);
-  }
+
+  const due = unwrap(dueResult, [] as TaskWithLinks[]);
+  const upcoming = unwrap(upcomingResult, [] as TaskWithLinks[]);
+  const cold = unwrap(coldResult, [] as ColdContact[]);
+  const stalledCompanies = unwrap(stalledCompanyResult, [] as StalledCompany[]);
+  const stalledRoles = unwrap(stalledRoleResult, [] as StalledRole[]);
+
+  const anyError = [
+    due.error,
+    upcoming.error,
+    cold.error,
+    stalledCompanies.error,
+    stalledRoles.error,
+  ].some((error) => error !== null);
 
   const allClear =
-    !loadError &&
-    dueTasks.length === 0 &&
-    coldContacts.length === 0 &&
-    stalledCompanies.length === 0 &&
-    stalledRoles.length === 0;
+    !anyError &&
+    due.data.length === 0 &&
+    upcoming.data.length === 0 &&
+    cold.data.length === 0 &&
+    stalledCompanies.data.length === 0 &&
+    stalledRoles.data.length === 0;
 
   const dateLabel = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -269,11 +320,7 @@ export default async function TodayPage() {
         <DisplayHeading>Today</DisplayHeading>
       </header>
 
-      {loadError ? (
-        <p className="text-sm text-destructive">
-          Could not load your dashboard: {loadError}.
-        </p>
-      ) : allClear ? (
+      {allClear ? (
         <div className="flex flex-col items-center gap-3 py-20 text-center">
           <CheckCircle2
             aria-hidden="true"
@@ -285,8 +332,9 @@ export default async function TodayPage() {
               You&rsquo;re all caught up.
             </p>
             <p className="mx-auto max-w-sm text-sm text-muted-foreground">
-              No overdue tasks, no relationships going cold, no stalled targets
-              or roles. Nothing needs you right now.
+              No overdue tasks, nothing coming up in the next week, no
+              relationships going cold, no stalled targets or roles. Nothing
+              needs you right now.
             </p>
           </div>
         </div>
@@ -294,53 +342,71 @@ export default async function TodayPage() {
         <>
           <StatStrip
             stats={[
-              { label: "Due", value: dueTasks.length },
-              { label: "Going Cold", value: coldContacts.length },
-              { label: "Stalled", value: stalledCompanies.length },
-              { label: "Roles", value: stalledRoles.length },
+              { label: "Due", value: due.data.length },
+              { label: "Upcoming", value: upcoming.data.length },
+              { label: "Going Cold", value: cold.data.length },
+              { label: "Stalled", value: stalledCompanies.data.length },
+              { label: "Roles", value: stalledRoles.data.length },
             ]}
           />
 
           {/* Work you owe on the left, relationships to watch on the right —
               both visible at once instead of stacked three deep. */}
           <div className="grid items-start gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
-            <Section
-              title="Due"
-              count={dueTasks.length}
-              emptyMessage="No overdue or due-today follow-ups."
-            >
-              {dueTasks.map((task) => (
-                <TaskRow key={task.id} task={task} />
-              ))}
-            </Section>
+            <div className="space-y-10">
+              <Section
+                title="Due"
+                count={due.data.length}
+                error={due.error}
+                emptyMessage="No overdue or due-today follow-ups."
+              >
+                {due.data.map((task) => (
+                  <TaskRow key={task.id} task={task} dueDateLabel={dueLabel} />
+                ))}
+              </Section>
+
+              <Section
+                title="Upcoming"
+                count={upcoming.data.length}
+                error={upcoming.error}
+                emptyMessage="Nothing due in the next 7 days."
+              >
+                {upcoming.data.map((task) => (
+                  <TaskRow key={task.id} task={task} dueDateLabel={upcomingLabel} />
+                ))}
+              </Section>
+            </div>
 
             <aside className="space-y-10">
               <Section
                 title="Going cold"
-                count={coldContacts.length}
+                count={cold.data.length}
+                error={cold.error}
                 emptyMessage="No warm contacts going stale."
               >
-                {coldContacts.map((contact) => (
+                {cold.data.map((contact) => (
                   <ColdContactRow key={contact.id} contact={contact} />
                 ))}
               </Section>
 
               <Section
                 title="High-conviction, stalled"
-                count={stalledCompanies.length}
+                count={stalledCompanies.data.length}
+                error={stalledCompanies.error}
                 emptyMessage="No high-conviction companies have gone quiet."
               >
-                {stalledCompanies.map((company) => (
+                {stalledCompanies.data.map((company) => (
                   <StalledCompanyRow key={company.id} company={company} />
                 ))}
               </Section>
 
               <Section
                 title="Roles stalled"
-                count={stalledRoles.length}
+                count={stalledRoles.data.length}
+                error={stalledRoles.error}
                 emptyMessage="No live roles have gone quiet."
               >
-                {stalledRoles.map((role) => (
+                {stalledRoles.data.map((role) => (
                   <StalledRoleRow key={role.id} role={role} />
                 ))}
               </Section>
