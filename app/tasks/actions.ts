@@ -2,7 +2,32 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
-import { updateTaskDueDate, updateTaskStatus } from "@/lib/db/tasks";
+import { createTask, updateTaskDueDate, updateTaskStatus } from "@/lib/db/tasks";
+import { formText } from "@/lib/forms";
+
+// The only manual task-creation path outside /capture -- a contact or
+// company detail page's "Add a task" form. due_date comes straight from an
+// <input type="date">, already the YYYY-MM-DD shape the `date` column wants.
+export async function createTaskAction(
+  contactId: string | null,
+  companyId: string | null,
+  formData: FormData,
+) {
+  await requireUser();
+  const title = formText(formData, "title");
+  if (!title) return;
+
+  await createTask({
+    contact_id: contactId,
+    company_id: companyId,
+    title,
+    due_date: formText(formData, "due_date"),
+  });
+
+  if (contactId) revalidatePath(`/contacts/${contactId}`);
+  if (companyId) revalidatePath(`/companies/${companyId}`);
+  revalidatePath("/today");
+}
 
 export async function markTaskDoneAction(taskId: string) {
   await requireUser();

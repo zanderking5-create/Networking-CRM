@@ -29,7 +29,11 @@ export function RoleStatusEditor({
         <label className="sr-only" htmlFor={`role-status-${roleId}`}>
           Status
         </label>
+        {/* Keyed on the value it reflects -- see the comment in
+            contact-cadence-editor.tsx on why an uncontrolled select needs
+            this to stay in sync after a revalidation. */}
         <select
+          key={status}
           id={`role-status-${roleId}`}
           name="status"
           defaultValue={status}

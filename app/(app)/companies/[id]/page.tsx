@@ -1,21 +1,37 @@
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
+import { createInteractionAction } from "@/app/interactions/actions";
+import { createNoteAction } from "@/app/notes/actions";
+import { createTaskAction } from "@/app/tasks/actions";
 import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
+import { NotesList } from "@/components/notes-list";
+import { TaskDueDateEditor } from "@/components/task-due-date-editor";
 import { Timeline } from "@/components/timeline";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DisplayHeading } from "@/components/ui/heading";
 import { Input } from "@/components/ui/input";
 import { RatingDots } from "@/components/ui/rating-dots";
+import { Textarea } from "@/components/ui/textarea";
 import { EmptyState, Pill, Row, RowList, RowMain, RowMeta, RowSubtitle, RowTitle, SectionLabel } from "@/components/ui/row";
 import { requireUser } from "@/lib/auth";
 import { getCompany } from "@/lib/db/companies";
 import { listContacts, listContactsByCompany } from "@/lib/db/contacts";
 import { listInteractionsForContacts } from "@/lib/db/interactions";
+import type { InteractionWithContact } from "@/lib/db/interactions";
+import { listNotesForCompany } from "@/lib/db/notes";
+import type { NoteWithContact } from "@/lib/db/notes";
 import { listRolesForCompany } from "@/lib/db/roles";
+import type { RoleWithReferrer } from "@/lib/db/roles";
+import { listOpenTasksForCompany } from "@/lib/db/tasks";
+import type { Company, Contact, ContactWithCompany, Task } from "@/lib/db/types";
+import { formatDate } from "@/lib/forms";
 import { ROLE_SOURCES, ROLE_STATUSES, roleSourceLabel, roleStatusLabel } from "@/lib/roles";
 import { createRoleAction } from "../../roles/actions";
 import { deleteCompanyAction, updateCompanyAction } from "../actions";
+
+const selectClass =
+  "h-8 flex-1 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/70";
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -28,6 +44,18 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+// Same "hidden until opened" pattern as "Add a role" below.
+function AddSection({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <details className="pt-3">
+      <summary className="inline-flex cursor-pointer items-center rounded bg-muted px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
+        {label}
+      </summary>
+      <div className="mt-3">{children}</div>
+    </details>
+  );
+}
+
 export default async function CompanyDetailPage({
   params,
 }: {
@@ -35,21 +63,49 @@ export default async function CompanyDetailPage({
 }) {
   await requireUser();
   const { id } = await params;
-  const [company, contacts, roles, allContacts] = await Promise.all([
-    getCompany(id),
-    listContactsByCompany(id),
-    listRolesForCompany(id),
-    listContacts(),
-  ]);
-  if (!company) notFound();
 
-  const interactions = await listInteractionsForContacts(
-    contacts.map((c) => c.id),
-  );
+  let company: Company | null = null;
+  let contacts: Contact[] = [];
+  let roles: RoleWithReferrer[] = [];
+  let allContacts: ContactWithCompany[] = [];
+  let openTasks: Task[] = [];
+  let interactions: InteractionWithContact[] = [];
+  let notes: NoteWithContact[] = [];
+  let loadError: string | null = null;
+  try {
+    [company, contacts, roles, allContacts, openTasks] = await Promise.all([
+      getCompany(id),
+      listContactsByCompany(id),
+      listRolesForCompany(id),
+      listContacts(),
+      listOpenTasksForCompany(id),
+    ]);
+    const contactIds = contacts.map((c) => c.id);
+    [interactions, notes] = await Promise.all([
+      listInteractionsForContacts(contactIds),
+      listNotesForCompany(id, contactIds),
+    ]);
+  } catch (error) {
+    loadError = error instanceof Error ? error.message : String(error);
+  }
+
+  if (loadError) {
+    return (
+      <p className="text-sm text-destructive">
+        Could not load this company: {loadError}. If the tables don&apos;t
+        exist yet, run the migration in supabase/migrations/ against your
+        Supabase project.
+      </p>
+    );
+  }
+  if (!company) notFound();
 
   const update = updateCompanyAction.bind(null, company.id);
   const remove = deleteCompanyAction.bind(null, company.id);
   const addRole = createRoleAction.bind(null, company.id);
+  const addTask = createTaskAction.bind(null, null, company.id);
+  const addNote = createNoteAction.bind(null, null, company.id);
+  const logInteraction = createInteractionAction.bind(null, company.id);
 
   return (
     <>
@@ -193,6 +249,66 @@ export default async function CompanyDetailPage({
           </section>
 
           <section className="space-y-1">
+            <SectionLabel count={openTasks.length}>Open tasks</SectionLabel>
+            {openTasks.length === 0 ? (
+              <EmptyState>No open tasks.</EmptyState>
+            ) : (
+              <RowList>
+                {openTasks.map((task) => (
+                  <Row key={task.id}>
+                    <RowMain>
+                      <RowTitle>{task.title}</RowTitle>
+                    </RowMain>
+                    <TaskDueDateEditor
+                      taskId={task.id}
+                      dueDate={task.due_date}
+                      label={task.due_date ? formatDate(task.due_date) : "No due date"}
+                      labelClassName="text-xs text-muted-foreground"
+                    />
+                  </Row>
+                ))}
+              </RowList>
+            )}
+
+            <AddSection label="Add a task">
+              <form action={addTask} className="flex items-center gap-2">
+                <Input name="title" placeholder="Task…" className="flex-1" required />
+                <Input name="due_date" type="date" className="w-auto" />
+                <Button size="sm" type="submit">
+                  Add
+                </Button>
+              </form>
+            </AddSection>
+          </section>
+
+          <section className="space-y-1">
+            <SectionLabel count={notes.length}>Notes</SectionLabel>
+            <NotesList
+              items={notes.map((n) => ({
+                id: n.id,
+                body: n.body,
+                created_at: n.created_at,
+                contactName: n.contacts?.name,
+              }))}
+              emptyMessage="No notes yet — about the company or anyone here."
+            />
+
+            <AddSection label="Add a note">
+              <form action={addNote} className="space-y-2">
+                <Textarea
+                  name="body"
+                  placeholder="Thesis fit, research, anything worth remembering about this company…"
+                  rows={4}
+                  required
+                />
+                <Button size="sm" type="submit">
+                  Save note
+                </Button>
+              </form>
+            </AddSection>
+          </section>
+
+          <section className="space-y-1">
             <SectionLabel count={interactions.length}>Interaction timeline</SectionLabel>
             <Timeline
               items={interactions.map((i) => ({
@@ -205,6 +321,61 @@ export default async function CompanyDetailPage({
               }))}
               emptyMessage="No interactions logged with any contact at this company yet."
             />
+
+            {contacts.length > 0 && (
+              <AddSection label="Log an interaction">
+                <form action={logInteraction} className="space-y-2">
+                  <label className="sr-only" htmlFor="log-interaction-contact">
+                    Contact
+                  </label>
+                  <select
+                    id="log-interaction-contact"
+                    name="contact_id"
+                    defaultValue=""
+                    className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/70"
+                    required
+                  >
+                    <option value="" disabled>
+                      Who was it with?
+                    </option>
+                    {contacts.map((contact) => (
+                      <option key={contact.id} value={contact.id}>
+                        {contact.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="flex gap-2">
+                    <select name="direction" defaultValue="out" className={selectClass}>
+                      <option value="out">Outreach (I reached out)</option>
+                      <option value="in">Inbound (they reached out)</option>
+                    </select>
+                    <select name="channel" defaultValue="" className={selectClass}>
+                      <option value="">Channel unknown</option>
+                      <option value="email">Email</option>
+                      <option value="linkedin">LinkedIn</option>
+                      <option value="call">Call</option>
+                      <option value="inperson">In person</option>
+                    </select>
+                  </div>
+                  <Textarea name="summary" placeholder="What happened…" rows={3} />
+                  <div className="flex items-center gap-2">
+                    <Input name="occurred_at" type="date" className="flex-1" />
+                    <Input
+                      name="warmth"
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      max={5}
+                      placeholder="New warmth (optional)"
+                      className="flex-1"
+                    />
+                  </div>
+                  <Button size="sm" type="submit">
+                    Log interaction
+                  </Button>
+                </form>
+              </AddSection>
+            )}
           </section>
         </div>
 

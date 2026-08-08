@@ -29,7 +29,11 @@ export function TaskDueDateEditor({
         {label}
       </summary>
       <form action={setDueDate} className="mt-1.5 flex items-center gap-1.5">
+        {/* Keyed on the value it reflects -- see the comment in
+            contact-cadence-editor.tsx on why an uncontrolled input needs
+            this to stay in sync after a revalidation. */}
         <Input
+          key={dueDate ?? "none"}
           type="date"
           name="due_date"
           defaultValue={dueDate ?? ""}

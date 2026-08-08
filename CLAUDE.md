@@ -70,15 +70,17 @@ presentation only — **auth is enforced per page** by `requireUser()`.
 
 ## Data model
 
-Five tables, defined in `supabase/migrations/`. The migration files are the
+Six tables, defined in `supabase/migrations/`. The migration files are the
 source of truth; `lib/db/types.ts` is a **hand-written** mirror of them (no
 generated Supabase types). Change both together.
 
 Migrations are applied **by hand** through the Supabase Dashboard SQL Editor —
 the app has no DB password or Management API token, and the anon key can't run
-DDL. That's why list pages catch load errors and render a message pointing at
-`supabase/migrations/`: it lets a deploy be verified before its migration has
-been run. Keep that behavior when adding tables.
+DDL. That's why every list page, plus `/contacts/[id]` and `/companies/[id]`,
+catch load errors and render a message pointing at `supabase/migrations/`: it
+lets a deploy be verified before its migration has been run. Keep that
+behavior when adding tables. (`/roles/[id]` doesn't yet — a known gap, not a
+model to copy.)
 
 ### `companies`
 `id`, `name` (not null), `created_at`. Everything else nullable free text:
@@ -149,8 +151,13 @@ without being a target at all. `id`, `company_id` → `companies(id)`
 - `raw_text` — the original pasted note. Only the capture flow sets it.
 - `occurred_at` not null, defaults to `now()`.
 
-There is **no manual interaction-creation UI**. Interactions only enter the
-system through `/capture`.
+Interactions enter the system two ways: `/capture` (with `raw_text` set), or
+the "Log an interaction" form on a contact or company detail page
+(`createInteractionAction` in `app/interactions/actions.ts`, `raw_text`
+left null). Both paths bump the contact's `last_touch_at` to `occurred_at`
+and optionally `warmth` — a manually-logged interaction has to move those
+too, or "Going cold" would keep counting a genuinely-touched contact as
+overdue.
 
 ### `tasks`
 - `contact_id` (nullable, cascade) and `company_id` (nullable, set null) — a
@@ -164,6 +171,25 @@ system through `/capture`.
   by N days and leaves the status `open`. Don't assume the third state is live.
 - `source_interaction_id` → `interactions(id)` `ON DELETE SET NULL`, set when
   capture derives a follow-up from an interaction.
+
+### `notes`
+A standing thought or observation with **no event attached** — deliberately
+not an interaction. An interaction is always a timestamped call/email/
+message; a note is research, thesis-fit thinking, or anything else worth
+writing down that didn't happen at a specific moment. `id`, `body` (not
+null), `created_at`, plus:
+- `contact_id` → `contacts(id)` `ON DELETE CASCADE`, `company_id` →
+  `companies(id)` `ON DELETE SET NULL` — both nullable, same shape as
+  `tasks`. A note written through the UI always has at least one set (the
+  contact or company detail page it was written from); nothing currently
+  creates one with neither.
+- Only entry point is manual: the "Add a note" form on a contact or company
+  detail page (`createNoteAction` in `app/notes/actions.ts`). Capture does
+  not create notes — see the capture pipeline section.
+- The company page's notes list aggregates its own `company_id` notes with
+  every note belonging to one of its contacts (`listNotesForCompany()` in
+  `lib/db/notes.ts`), the same "direct or via a contact" pattern
+  `getCompanyActivity()` and the interaction timeline already use.
 
 ### Derived views (computed in app code, not SQL)
 
@@ -196,8 +222,11 @@ Server Component that calls `await requireUser()` and then reads through
 (`lib/supabase.ts`) is used *only* for auth on `/login` and `/reset-password`.
 
 **Mutations go through plain server-action forms.** `"use server"` actions live
-in `app/(app)/contacts/actions.ts`, `app/(app)/companies/actions.ts`, and
-`app/tasks/actions.ts`. The pattern is:
+in `app/(app)/contacts/actions.ts`, `app/(app)/companies/actions.ts`,
+`app/(app)/roles/actions.ts`, and three cross-cutting top-level files not
+nested under any one resource because they're called from more than one
+detail page — `app/tasks/actions.ts`, `app/notes/actions.ts`, and
+`app/interactions/actions.ts`. The pattern is:
 
 ```tsx
 const update = updateContactAction.bind(null, contact.id);
@@ -220,6 +249,16 @@ list). The same pattern gates every destructive delete:
 fire — no client JS, no `window.confirm`. **No drag-and-drop anywhere in the
 app** — the `/roles` board moves a role between stages via this same
 form-and-select pattern, not a DnD library or client state, on purpose.
+
+Every `<details>`-based editor's uncontrolled input/select needs a `key` tied
+to the value it displays (`key={cadence ?? "none"}`,
+`key={dueDate ?? "none"}`, `key={status}`). `defaultValue` only applies at
+mount — without the key, a server-action revalidation that changes the
+underlying value doesn't reset an already-mounted element's live DOM value,
+so it keeps showing whatever was last interacted with in that exact node.
+Since the value's plain-text display (a pill, a summary label) *does* update
+immediately, the symptom is the text and the form control disagreeing for
+the same record. Add the key to any new editor built on this pattern.
 
 **The capture flow is the one intentional exception.** Only five client
 components exist: `app/login/page.tsx`, `app/reset-password/page.tsx`,
@@ -254,6 +293,16 @@ missing key when `ANTHROPIC_API_KEY` is unset. The **service-role key is never
 stored anywhere** — not in `.env.local`, not in Vercel, not in a commit.
 
 ## Capture pipeline (`/capture`)
+
+Capture is the AI-parsed path, not the only path. Every record type also has
+a plain manual form now: contacts/companies through their own list pages,
+notes/tasks/interactions through the "Add a note" / "Add a task" / "Log an
+interaction" forms on a contact or company detail page. Capture exists for
+the case where typing a free-form note is faster than filling out a form and
+you want the parser to figure out which record type and fields it implies;
+the manual forms exist because routing *everything* through the parser
+compresses richer, less event-shaped entries (research, standing thoughts)
+that don't want to be squeezed into one of the four parsed types.
 
 1. `POST /api/parse` authenticates, then loads **all** contacts and companies
    and embeds them (id + name) in the system prompt (`lib/capture/prompt.ts`) so
@@ -326,6 +375,13 @@ per-page styling.
 - **Color signals meaning, and only one meaning**: conviction and warmth, drawn
   as olive `RatingDots`. Pills, avatars, timeline marks, and status text stay
   neutral. Primary is deep olive; sky-blue is the focus ring / rare accent.
+  `PreviewCard`'s ambiguity banner (`components/capture/preview-card.tsx`)
+  used to render in the same destructive red as a real error; ambiguities are
+  the model flagging what it hedged on, not something broken, so it's neutral
+  (`border-border`/`bg-muted`) now. That component also maps every ambiguity
+  `field` name to a human label (`FIELD_LABELS`, with a snake_case-to-Title-Case
+  fallback) — the model sometimes echoes a raw wire-schema key like
+  `person_company_name` verbatim, and that shouldn't reach the UI unmapped.
 - `components/ui/heading.tsx` (`DisplayHeading`, Fraunces serif) is reserved for
   major page headings — the Today title and contact/company names. Everything
   else is Geist Sans. `components/ui/avatar.tsx` gives people circles and

@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
+import { createInteractionAction } from "@/app/interactions/actions";
+import { createNoteAction } from "@/app/notes/actions";
+import { createTaskAction } from "@/app/tasks/actions";
 import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
 import { ContactCadenceEditor } from "@/components/contact-cadence-editor";
+import { NotesList } from "@/components/notes-list";
 import { TaskDueDateEditor } from "@/components/task-due-date-editor";
 import { Timeline } from "@/components/timeline";
 import { Avatar } from "@/components/ui/avatar";
@@ -10,14 +14,20 @@ import { Button } from "@/components/ui/button";
 import { DisplayHeading } from "@/components/ui/heading";
 import { Input } from "@/components/ui/input";
 import { RatingDots } from "@/components/ui/rating-dots";
+import { Textarea } from "@/components/ui/textarea";
 import { EmptyState, Pill, Row, RowList, RowMain, RowTitle, SectionLabel } from "@/components/ui/row";
 import { requireUser } from "@/lib/auth";
 import { listCompanies } from "@/lib/db/companies";
 import { getContact } from "@/lib/db/contacts";
 import { listInteractionsForContact } from "@/lib/db/interactions";
+import { listNotesForContact } from "@/lib/db/notes";
 import { listOpenTasksForContact } from "@/lib/db/tasks";
+import type { Company, Contact, Interaction, Note, Task } from "@/lib/db/types";
 import { formatDate, toDatetimeLocal } from "@/lib/forms";
 import { deleteContactAction, updateContactAction } from "../actions";
+
+const selectClass =
+  "h-8 flex-1 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/70";
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -30,6 +40,24 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+// Same "hidden until opened" pattern as the company page's "Add a role".
+function AddSection({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <details className="pt-3">
+      <summary className="inline-flex cursor-pointer items-center rounded bg-muted px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
+        {label}
+      </summary>
+      <div className="mt-3">{children}</div>
+    </details>
+  );
+}
+
 export default async function ContactDetailPage({
   params,
 }: {
@@ -37,16 +65,41 @@ export default async function ContactDetailPage({
 }) {
   await requireUser();
   const { id } = await params;
-  const [contact, companies, interactions, openTasks] = await Promise.all([
-    getContact(id),
-    listCompanies(),
-    listInteractionsForContact(id),
-    listOpenTasksForContact(id),
-  ]);
+
+  let contact: Contact | null = null;
+  let companies: Company[] = [];
+  let interactions: Interaction[] = [];
+  let openTasks: Task[] = [];
+  let notes: Note[] = [];
+  let loadError: string | null = null;
+  try {
+    [contact, companies, interactions, openTasks, notes] = await Promise.all([
+      getContact(id),
+      listCompanies(),
+      listInteractionsForContact(id),
+      listOpenTasksForContact(id),
+      listNotesForContact(id),
+    ]);
+  } catch (error) {
+    loadError = error instanceof Error ? error.message : String(error);
+  }
+
+  if (loadError) {
+    return (
+      <p className="text-sm text-destructive">
+        Could not load this contact: {loadError}. If the tables don&apos;t
+        exist yet, run the migration in supabase/migrations/ against your
+        Supabase project.
+      </p>
+    );
+  }
   if (!contact) notFound();
 
   const update = updateContactAction.bind(null, contact.id);
   const remove = deleteContactAction.bind(null, contact.id);
+  const addTask = createTaskAction.bind(null, contact.id, contact.company_id);
+  const addNote = createNoteAction.bind(null, contact.id, contact.company_id);
+  const logInteraction = createInteractionAction.bind(null, contact.company_id);
 
   const company = companies.find((c) => c.id === contact.company_id) ?? null;
 
@@ -107,6 +160,41 @@ export default async function ContactDetailPage({
                 ))}
               </RowList>
             )}
+
+            <AddSection label="Add a task">
+              <form action={addTask} className="flex items-center gap-2">
+                <Input name="title" placeholder="Task…" className="flex-1" required />
+                <Input name="due_date" type="date" className="w-auto" />
+                <Button size="sm" type="submit">
+                  Add
+                </Button>
+              </form>
+            </AddSection>
+          </section>
+
+          <section className="space-y-1">
+            <SectionLabel count={notes.length}>Notes</SectionLabel>
+            <NotesList
+              items={notes.map((n) => ({
+                id: n.id,
+                body: n.body,
+                created_at: n.created_at,
+              }))}
+            />
+
+            <AddSection label="Add a note">
+              <form action={addNote} className="space-y-2">
+                <Textarea
+                  name="body"
+                  placeholder="A thought, research, anything worth remembering — not tied to a specific call or message…"
+                  rows={4}
+                  required
+                />
+                <Button size="sm" type="submit">
+                  Save note
+                </Button>
+              </form>
+            </AddSection>
           </section>
 
           <section className="space-y-1">
@@ -120,6 +208,41 @@ export default async function ContactDetailPage({
                 summary: i.summary,
               }))}
             />
+
+            <AddSection label="Log an interaction">
+              <form action={logInteraction} className="space-y-2">
+                <input type="hidden" name="contact_id" value={contact.id} />
+                <div className="flex gap-2">
+                  <select name="direction" defaultValue="out" className={selectClass}>
+                    <option value="out">Outreach (I reached out)</option>
+                    <option value="in">Inbound (they reached out)</option>
+                  </select>
+                  <select name="channel" defaultValue="" className={selectClass}>
+                    <option value="">Channel unknown</option>
+                    <option value="email">Email</option>
+                    <option value="linkedin">LinkedIn</option>
+                    <option value="call">Call</option>
+                    <option value="inperson">In person</option>
+                  </select>
+                </div>
+                <Textarea name="summary" placeholder="What happened…" rows={3} />
+                <div className="flex items-center gap-2">
+                  <Input name="occurred_at" type="date" className="flex-1" />
+                  <Input
+                    name="warmth"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={5}
+                    placeholder="New warmth (optional)"
+                    className="flex-1"
+                  />
+                </div>
+                <Button size="sm" type="submit">
+                  Log interaction
+                </Button>
+              </form>
+            </AddSection>
           </section>
         </div>
 

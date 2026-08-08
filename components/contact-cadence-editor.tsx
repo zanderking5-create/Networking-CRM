@@ -27,7 +27,16 @@ export function ContactCadenceEditor({
         <label className="sr-only" htmlFor={`cadence-${contactId}`}>
           Keep-in-touch cadence
         </label>
+        {/* Keyed on the value it reflects: `defaultValue` only applies at
+            mount, so without this key a select left open across a
+            server-action revalidation (edit this contact's cadence
+            elsewhere, or resubmit this same form) keeps showing whatever
+            the user last interacted with in this exact DOM node instead of
+            the current saved value -- the pill (plain text, always fresh)
+            and the select could then visibly disagree for the same
+            contact. The key forces a remount so defaultValue re-applies. */}
         <select
+          key={cadence ?? "none"}
           id={`cadence-${contactId}`}
           name="cadence"
           defaultValue={cadence ?? ""}

@@ -27,13 +27,71 @@ function ConfidenceBadge({ confidence }: { confidence: "high" | "medium" | "low"
   );
 }
 
+// Maps every field name that can appear in an ambiguity note -- both the
+// clean parseResultSchema names and the flat wire-schema names the model
+// sometimes echoes back verbatim (e.g. "person_company_name", "channel") --
+// to a human label, so the UI never shows a raw schema key.
+const FIELD_LABELS: Record<string, string> = {
+  matched_contact_id: "Matched contact",
+  matched_company_id: "Matched company",
+  contact_name_if_new: "Contact name",
+  person_name: "Name",
+  name: "Name",
+  company_name: "Company",
+  person_company_name: "Company",
+  role: "Role",
+  type: "Type",
+  contact_type: "Type",
+  warmth: "Warmth",
+  hook: "Hook",
+  source: "Source",
+  linkedin_url: "LinkedIn URL",
+  email: "Email",
+  stage: "Stage",
+  investors: "Investors",
+  geography: "Geography",
+  thesis_fit_notes: "Thesis fit notes",
+  founder_delegation_style: "Founder delegation style",
+  autonomy_scope: "Autonomy scope",
+  social_pct: "Social %",
+  status: "Status",
+  website: "Website",
+  direction: "Direction",
+  channel: "Channel",
+  summary: "Summary",
+  occurred_at: "Occurred on",
+  follow_up_task: "Follow-up task",
+  follow_up_title: "Follow-up title",
+  follow_up_due_date: "Follow-up due date",
+  suggested_warmth: "Suggested warmth",
+  warmth_reason: "Warmth reason",
+  title: "Title",
+  task_title: "Title",
+  due_date: "Due date",
+  task_due_date: "Due date",
+};
+
+// The model can put any string it wants in an ambiguity's `field` -- the
+// map above only covers names we anticipate. Anything unrecognized still
+// doesn't render as a raw key: snake_case becomes Title Case instead.
+function fieldLabel(field: string): string {
+  return (
+    FIELD_LABELS[field] ??
+    field.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase())
+  );
+}
+
+// Ambiguities are the model flagging what it guessed at, not something
+// broken -- destructive/error styling here overstates it, and is the only
+// place in the app where color carries meaning beyond conviction/warmth.
 function AmbiguityList({ items }: { items: Ambiguity[] }) {
   if (items.length === 0) return null;
   return (
-    <ul className="space-y-1 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+    <ul className="space-y-1 rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
       {items.map((a, i) => (
         <li key={i}>
-          <span className="font-medium">{a.field}:</span> {a.note}
+          <span className="font-medium text-foreground">{fieldLabel(a.field)}:</span>{" "}
+          {a.note}
         </li>
       ))}
     </ul>

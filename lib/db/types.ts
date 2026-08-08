@@ -101,3 +101,16 @@ export type Task = {
   source_interaction_id: string | null;
   created_at: string;
 };
+
+// A standing thought or observation, not tied to any single event --
+// distinct from an interaction, which always has a specific timestamped
+// occurrence. Neither contact_id nor company_id is required, but a note
+// created through the UI always has at least one: the contact/company
+// detail page it was written from.
+export type Note = {
+  id: string;
+  contact_id: string | null;
+  company_id: string | null;
+  body: string;
+  created_at: string;
+};
