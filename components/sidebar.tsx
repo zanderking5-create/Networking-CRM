@@ -1,8 +1,9 @@
 "use client";
 
-import { Briefcase, Building2, CalendarCheck, PenLine, Users } from "lucide-react";
+import { Briefcase, Building2, CalendarCheck, LogOut, PenLine, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOutAction } from "@/app/auth/actions";
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -65,6 +66,20 @@ export function Sidebar() {
             );
           })}
         </nav>
+
+        <form action={signOutAction} className="mt-auto pt-4">
+          <button
+            type="submit"
+            className="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70"
+          >
+            <LogOut
+              aria-hidden="true"
+              strokeWidth={1.75}
+              className="size-4 text-muted-foreground/70 transition-colors group-hover:text-muted-foreground"
+            />
+            Sign out
+          </button>
+        </form>
       </aside>
 
       <nav className="flex items-center gap-1 overflow-x-auto border-b border-border px-4 py-2 sm:hidden">
@@ -91,6 +106,16 @@ export function Sidebar() {
             </Link>
           );
         })}
+
+        <form action={signOutAction} className="ml-auto shrink-0">
+          <button
+            type="submit"
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+          >
+            <LogOut aria-hidden="true" strokeWidth={1.75} className="size-3.5 text-muted-foreground/70" />
+            Sign out
+          </button>
+        </form>
       </nav>
     </>
   );
