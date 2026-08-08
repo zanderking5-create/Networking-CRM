@@ -358,7 +358,7 @@ export default async function TodayPage() {
                 title="Due"
                 count={due.data.length}
                 error={due.error}
-                emptyMessage="No overdue or due-today follow-ups."
+                emptyMessage="No due-today or overdue follow-ups. Give a task a due date to see it here."
               >
                 {due.data.map((task) => (
                   <TaskRow key={task.id} task={task} dueDateLabel={dueLabel} />
@@ -369,7 +369,7 @@ export default async function TodayPage() {
                 title="Upcoming"
                 count={upcoming.data.length}
                 error={upcoming.error}
-                emptyMessage="Nothing due in the next 7 days."
+                emptyMessage="Nothing due in the next 7 days. Due dates inside that window show up here."
               >
                 {upcoming.data.map((task) => (
                   <TaskRow key={task.id} task={task} dueDateLabel={upcomingLabel} />
@@ -382,7 +382,7 @@ export default async function TodayPage() {
                 title="Going cold"
                 count={cold.data.length}
                 error={cold.error}
-                emptyMessage="No warm contacts going stale."
+                emptyMessage="No contacts going cold. Set a cadence on a contact to start tracking it here."
               >
                 {cold.data.map((contact) => (
                   <ColdContactRow key={contact.id} contact={contact} />
@@ -393,7 +393,7 @@ export default async function TodayPage() {
                 title="High-conviction, stalled"
                 count={stalledCompanies.data.length}
                 error={stalledCompanies.error}
-                emptyMessage="No high-conviction companies have gone quiet."
+                emptyMessage="No high-conviction companies have gone quiet. Companies at conviction 4 or 5 show up here after 14 days of silence."
               >
                 {stalledCompanies.data.map((company) => (
                   <StalledCompanyRow key={company.id} company={company} />
@@ -404,7 +404,7 @@ export default async function TodayPage() {
                 title="Roles stalled"
                 count={stalledRoles.data.length}
                 error={stalledRoles.error}
-                emptyMessage="No live roles have gone quiet."
+                emptyMessage="No roles have stalled. Roles in conversation or interviewing show up here after 10 days without a stage change."
               >
                 {stalledRoles.data.map((role) => (
                   <StalledRoleRow key={role.id} role={role} />

@@ -39,7 +39,7 @@ export default async function ContactsPage() {
             project.
           </p>
         ) : contacts.length === 0 ? (
-          <EmptyState>No contacts yet — add your first one below.</EmptyState>
+          <EmptyState>No contacts yet. Add your first one below.</EmptyState>
         ) : (
           <RowList>
             {contacts.map((contact) => (

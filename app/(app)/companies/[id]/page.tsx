@@ -136,7 +136,7 @@ export default async function CompanyDetailPage({
             <SectionLabel count={roles.length}>Roles</SectionLabel>
             {roles.length === 0 ? (
               <EmptyState>
-                No roles tracked here yet — add the specific seat below.
+                No roles tracked here yet. Add the specific seat below.
               </EmptyState>
             ) : (
               <RowList>
@@ -230,7 +230,10 @@ export default async function CompanyDetailPage({
           <section className="space-y-1">
             <SectionLabel count={contacts.length}>Contacts</SectionLabel>
             {contacts.length === 0 ? (
-              <EmptyState>No contacts linked to this company yet.</EmptyState>
+              <EmptyState>
+                No contacts linked to this company yet. Add one from Contacts
+                and pick this company.
+              </EmptyState>
             ) : (
               <RowList>
                 {contacts.map((contact) => (
@@ -251,7 +254,7 @@ export default async function CompanyDetailPage({
           <section className="space-y-1">
             <SectionLabel count={openTasks.length}>Open tasks</SectionLabel>
             {openTasks.length === 0 ? (
-              <EmptyState>No open tasks.</EmptyState>
+              <EmptyState>No open tasks. Add one below.</EmptyState>
             ) : (
               <RowList>
                 {openTasks.map((task) => (
@@ -290,7 +293,7 @@ export default async function CompanyDetailPage({
                 created_at: n.created_at,
                 contactName: n.contacts?.name,
               }))}
-              emptyMessage="No notes yet — about the company or anyone here."
+              emptyMessage="No notes about this company or anyone here yet. Add one below."
             />
 
             <AddSection label="Add a note">
@@ -319,7 +322,11 @@ export default async function CompanyDetailPage({
                 summary: i.summary,
                 contactName: i.contacts?.name,
               }))}
-              emptyMessage="No interactions logged with any contact at this company yet."
+              emptyMessage={
+                contacts.length > 0
+                  ? "No interactions logged with anyone here yet. Log one below."
+                  : "No interactions logged with anyone here yet. Add a contact to this company first."
+              }
             />
 
             {contacts.length > 0 && (

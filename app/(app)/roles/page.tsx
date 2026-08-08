@@ -82,7 +82,7 @@ export default async function RolesBoardPage() {
         </p>
       ) : roles.length === 0 ? (
         <EmptyState>
-          No roles tracked yet — add one from a company page.
+          No roles tracked yet. Add one from a company page.
         </EmptyState>
       ) : (
         // Bleeds past the content column like the /companies pipeline
@@ -96,7 +96,7 @@ export default async function RolesBoardPage() {
                   {column.label}
                 </SectionLabel>
                 {column.roles.length === 0 ? (
-                  <EmptyState>None</EmptyState>
+                  <EmptyState>No roles at this stage</EmptyState>
                 ) : (
                   <div className="space-y-2.5">
                     {column.roles.map((role) => (

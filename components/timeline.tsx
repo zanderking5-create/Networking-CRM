@@ -37,7 +37,7 @@ function DirectionMark({ direction }: { direction: string | null }) {
 
 export function Timeline({
   items,
-  emptyMessage = "No interactions yet.",
+  emptyMessage = "No interactions yet. Log one below.",
 }: {
   items: TimelineEntry[];
   emptyMessage?: string;

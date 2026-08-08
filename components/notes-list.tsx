@@ -12,7 +12,7 @@ export type NoteListItem = {
 
 export function NotesList({
   items,
-  emptyMessage = "No notes yet.",
+  emptyMessage = "No notes yet. Add one below.",
 }: {
   items: NoteListItem[];
   emptyMessage?: string;

@@ -43,7 +43,7 @@ export default async function CompaniesPage({
             project.
           </p>
         ) : companies.length === 0 ? (
-          <EmptyState>No companies yet — add your first one below.</EmptyState>
+          <EmptyState>No companies yet. Add your first one below.</EmptyState>
         ) : (
           <CompanyPipelineTable rows={companies} sort={sort} />
         )}

@@ -142,7 +142,7 @@ export default async function ContactDetailPage({
           <section className="space-y-1">
             <SectionLabel count={openTasks.length}>Open tasks</SectionLabel>
             {openTasks.length === 0 ? (
-              <EmptyState>No open tasks.</EmptyState>
+              <EmptyState>No open tasks. Add one below.</EmptyState>
             ) : (
               <RowList>
                 {openTasks.map((task) => (
